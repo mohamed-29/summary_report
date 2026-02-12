@@ -4,3 +4,4 @@ pandas
 openpyxl
 google-generativeai
 Pillow
+psycopg2-binary
