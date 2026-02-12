@@ -1,0 +1,166 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Logistics Dashboard - {{ selected_month|date:"F Y" }}{% endblock %}
+
+{% block content %}
+<header>
+    <h1>📊 Logistics Dashboard</h1>
+    <p>Monthly Performance Summary for Vending Machines</p>
+</header>
+
+{% if messages %}
+<div class="messages">
+    {% for message in messages %}
+    <div class="message {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="controls">
+    <form method="get" action="" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <select name="month" onchange="this.form.submit()">
+            {% for month in available_months %}
+            <option value="{{ month.month|date:'Y-m' }}" {% if month.month == selected_month %}selected{% endif %}>
+                {{ month.month|date:"F Y" }}
+            </option>
+            {% empty %}
+            <option value="{{ selected_month|date:'Y-m' }}" selected>
+                {{ selected_month|date:"F Y" }}
+            </option>
+            {% endfor %}
+        </select>
+    </form>
+
+    {% if has_gemini_key and summary_data %}
+    <form method="post" action="{% url 'logistics:generate_summaries' %}">
+        {% csrf_token %}
+        <input type="hidden" name="month" value="{{ selected_month|date:'Y-m' }}">
+        <button type="submit" class="primary">🤖 Generate AI Summaries</button>
+    </form>
+    {% endif %}
+
+    <a href="{% url 'logistics:operator_list' %}?month={{ selected_month|date:'Y-m' }}">
+        <button type="button">👥 Operators List</button>
+    </a>
+
+    <a href="{% url 'logistics:daily_machine_summary' %}?date={% now 'Y-m-d' %}">
+        <button type="button">📅 Daily Summary</button>
+    </a>
+
+    {% if user.is_superuser %}
+    <a href="{% url 'admin:index' %}">
+        <button type="button">⚙️ Admin Panel</button>
+    </a>
+    {% endif %}
+</div>
+
+<!-- Upload Section -->
+<div class="upload-section" style="margin-bottom: 2rem;">
+    <h3
+        style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">
+        📤 Upload Data</h3>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <!-- On-Site Upload -->
+        <form method="post" action="{% url 'logistics:upload_onsite' %}" enctype="multipart/form-data"
+            class="upload-form">
+            {% csrf_token %}
+            <label class="upload-btn"
+                style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: var(--bg-card); border: 2px dashed var(--border); border-radius: 0.5rem; cursor: pointer; transition: all 0.2s;">
+                <span>🏢 On-Site Operator Logs</span>
+                <input type="file" name="file" accept=".xlsx,.xls" onchange="this.form.submit()" style="display: none;">
+            </label>
+        </form>
+
+        <!-- Car Upload -->
+        <form method="post" action="{% url 'logistics:upload_car' %}" enctype="multipart/form-data" class="upload-form">
+            {% csrf_token %}
+            <label class="upload-btn"
+                style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: var(--bg-card); border: 2px dashed var(--border); border-radius: 0.5rem; cursor: pointer; transition: all 0.2s;">
+                <span>🚗 Car Operator Logs</span>
+                <input type="file" name="file" accept=".xlsx,.xls" onchange="this.form.submit()" style="display: none;">
+            </label>
+        </form>
+    </div>
+</div>
+
+<style>
+    .upload-btn:hover {
+        border-color: var(--primary);
+        background: var(--bg-hover);
+    }
+</style>
+
+{% if summary_data %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="label">Total Machines</div>
+        <div class="value">{{ grand_totals.machine_count }}</div>
+    </div>
+    <div class="stat-card success">
+        <div class="label">Total Transactions</div>
+        <div class="value">{{ grand_totals.total_transactions|floatformat:0 }}</div>
+    </div>
+    <div class="stat-card warning">
+        <div class="label">Total Voids</div>
+        <div class="value">{{ grand_totals.total_voids|floatformat:0 }}</div>
+    </div>
+    <div
+        class="stat-card {% if grand_totals.void_percentage > 5 %}danger{% elif grand_totals.void_percentage > 2 %}warning{% else %}success{% endif %}">
+        <div class="label">Overall Void %</div>
+        <div class="value">{{ grand_totals.void_percentage }}%</div>
+    </div>
+</div>
+
+<div class="data-table">
+    <table>
+        <thead>
+            <tr>
+                <th>Machine Name</th>
+                <th>Visits</th>
+                <th>Transactions</th>
+                <th>Voids</th>
+                <th>Void %</th>
+                <th>AI Summary</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in summary_data %}
+            <tr>
+                <td>
+                    <a href="{% url 'logistics:machine_detail' row.machine_id %}?month={{ selected_month|date:'Y-m' }}">
+                        {{ row.machine_name }}
+                    </a>
+                </td>
+                <td>{{ row.visit_count }}</td>
+                <td>{{ row.total_transactions|floatformat:0 }}</td>
+                <td>{{ row.total_voids|floatformat:0 }}</td>
+                <td>
+                    <span
+                        class="badge {% if row.void_percentage > 5 %}badge-danger{% elif row.void_percentage > 2 %}badge-warning{% else %}badge-success{% endif %}">
+                        {{ row.void_percentage }}%
+                    </span>
+                </td>
+                <td class="ai-summary">
+                    {% if row.ai_summary %}
+                    {{ row.ai_summary }}
+                    {% else %}
+                    <em>Not generated</em>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% else %}
+<div class="empty-state">
+    <h3>No Data Available</h3>
+    <p>No visit logs found for {{ selected_month|date:"F Y" }}.</p>
+    <p>Use the <code>ingest_logs</code> management command to import data from Excel files.</p>
+    <pre style="background: var(--bg-card); padding: 1rem; border-radius: 0.5rem; margin-top: 1rem;">
+python manage.py ingest_logs "path/to/file.xlsx" --type onsite</pre>
+</div>
+{% endif %}
+
+{% endblock %}

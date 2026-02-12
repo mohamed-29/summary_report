@@ -1,0 +1,926 @@
+{% load form_tags %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نموذج تسجيل الزيارة | iVend</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --primary-dark: #5a4bd1;
+            --primary-light: #a29bfe;
+            --accent: #00cec9;
+            --bg-dark: #0f0f1a;
+            --bg-card: #1a1a2e;
+            --bg-input: #16213e;
+            --text-primary: #ffffff;
+            --text-secondary: #b2bec3;
+            --text-label: #dfe6e9;
+            --error: #ff6b6b;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --border: rgba(108, 92, 231, 0.3);
+            --border-input: rgba(108, 92, 231, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .top-bar .operator-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .top-bar .avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .top-bar .name {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .top-bar .code {
+            font-size: 0.75rem;
+            color: var(--primary-light);
+            direction: ltr;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            background: rgba(255, 107, 107, 0.15);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: var(--error);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 107, 107, 0.25);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            background: var(--bg-card);
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 64px;
+            z-index: 99;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: var(--bg-input);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 4px;
+            transition: width 0.4s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        /* Main Form */
+        .form-container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        .section {
+            background: var(--bg-card);
+            border-radius: 18px;
+            padding: 24px 20px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            animation: fadeInUp 0.4s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text-label);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-group label .req {
+            color: var(--error);
+            margin-right: 2px;
+        }
+
+        .form-select,
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-input);
+            border: 2px solid var(--border-input);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            -webkit-appearance: none;
+        }
+
+        .form-select {
+            cursor: pointer;
+        }
+
+        .form-select:focus,
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.12);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        /* Star Rating */
+        .star-rating {
+            display: flex;
+            gap: 8px;
+            direction: ltr;
+        }
+
+        .star-rating input[type="radio"] {
+            display: none;
+        }
+
+        .star-rating label {
+            font-size: 2rem;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.15);
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .star-rating label:hover,
+        .star-rating label:hover~label,
+        .star-rating input:checked~label {
+            color: var(--warning);
+            text-shadow: 0 0 10px rgba(253, 203, 110, 0.4);
+        }
+
+        /* Reverse for RTL star rating */
+        .star-rating {
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+        }
+
+        .star-rating label:hover~label,
+        .star-rating input:checked~label {
+            color: var(--warning);
+        }
+
+        /* Photo Upload */
+        .photo-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 14px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .photo-upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(108, 92, 231, 0.05);
+        }
+
+        .photo-upload-area .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .photo-upload-area .upload-text {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .photo-upload-area .upload-hint {
+            color: var(--primary-light);
+            font-size: 0.8rem;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        .photo-upload-area input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .photo-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .photo-preview-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            background: var(--bg-input);
+        }
+
+        .photo-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-preview-item .remove-btn {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 22px;
+            height: 22px;
+            background: var(--error);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Yes/No Toggle */
+        .yn-toggle {
+            display: flex;
+            gap: 8px;
+        }
+
+        .yn-toggle label {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid var(--border-input);
+            background: var(--bg-input);
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: var(--text-secondary);
+        }
+
+        .yn-toggle input[type="radio"] {
+            display: none;
+        }
+
+        .yn-toggle input[type="radio"]:checked+label {
+            border-color: var(--success);
+            background: rgba(0, 184, 148, 0.1);
+            color: var(--success);
+        }
+
+        .yn-toggle input[type="radio"][value="لا"]:checked+label {
+            border-color: var(--error);
+            background: rgba(255, 107, 107, 0.1);
+            color: var(--error);
+        }
+
+        /* Submit */
+        .submit-section {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            padding: 16px 20px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .submit-btn {
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            display: block;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(108, 92, 231, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Success message */
+        .success-msg {
+            background: rgba(0, 184, 148, 0.1);
+            border: 1px solid rgba(0, 184, 148, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            color: var(--success);
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .error-list {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            color: var(--error);
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+        }
+
+        .error-list ul {
+            padding-right: 16px;
+        }
+
+        .action-btn {
+            background: rgba(108, 92, 231, 0.1);
+            border: 1px solid var(--primary);
+            color: var(--primary-light);
+            padding: 0 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .action-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        @media (max-width: 480px) {
+            .form-container {
+                padding: 12px;
+                padding-bottom: 90px;
+            }
+
+            .section {
+                padding: 20px 16px;
+                border-radius: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="operator-info">
+            <div class="avatar">👤</div>
+            <div>
+                <div class="name">{{ operator.name }}</div>
+                <div class="code">{{ operator.code }}</div>
+            </div>
+        </div>
+        <a href="{% url 'logistics:operator_logout' %}" class="logout-btn">خروج ✕</a>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-container">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">0 / 17 حقل مكتمل</div>
+    </div>
+
+    <div class="form-container">
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="success-msg">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if form.errors %}
+        <div class="error-list">
+            <strong>⚠️ يرجى تصحيح الأخطاء:</strong>
+            <ul>
+                {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" id="visitForm">
+            {% csrf_token %}
+
+            <!-- Section 1: Machine Selection -->
+            <div class="section" data-section="1">
+                <div class="section-header">
+                    <div class="section-icon">🏭</div>
+                    <div class="section-title">اختيار الماكينة</div>
+                </div>
+                <div class="form-group">
+                    <label><span class="req">*</span> {{ form.machine.label }}</label>
+                    {{ form.machine }}
+                </div>
+            </div>
+
+            <!-- Section 2: Checklist -->
+            <div class="section" data-section="2">
+                <div class="section-header">
+                    <div class="section-icon">✅</div>
+                    <div class="section-title">قائمة التحقق</div>
+                </div>
+
+                <!-- Key Received -->
+                <div class="form-group">
+                    <label>{{ form.received_keys.label }}</label>
+                    <div class="yn-toggle">
+                        <input type="radio" required name="{{ form.received_keys.html_name }}" value="نعم"
+                            id="{{ form.received_keys.auto_id }}_yes" {% if form.received_keys.value=="نعم" %}checked{%
+                            endif %}>
+                        <label for="{{ form.received_keys.auto_id }}_yes">✓ نعم</label>
+                        <input type="radio" name="{{ form.received_keys.html_name }}" value="لا"
+                            id="{{ form.received_keys.auto_id }}_no" {% if form.received_keys.value=="لا" %}checked{%
+                            endif %}>
+                        <label for="{{ form.received_keys.auto_id }}_no">✕ لا</label>
+                    </div>
+                </div>
+
+                <!-- POS Verified -->
+                <div class="form-group">
+                    <label>{{ form.pos_verified.label }}</label>
+                    <div class="yn-toggle">
+                        <input type="radio" required name="{{ form.pos_verified.html_name }}" value="نعم"
+                            id="{{ form.pos_verified.auto_id }}_yes" {% if form.pos_verified.value=="نعم" %}checked{%
+                            endif %}>
+                        <label for="{{ form.pos_verified.auto_id }}_yes">✓ نعم</label>
+                        <input type="radio" name="{{ form.pos_verified.html_name }}" value="لا"
+                            id="{{ form.pos_verified.auto_id }}_no" {% if form.pos_verified.value=="لا" %}checked{%
+                            endif %}>
+                        <label for="{{ form.pos_verified.auto_id }}_no">✕ لا</label>
+                    </div>
+                </div>
+
+                <!-- Product Review -->
+                <div class="form-group">
+                    <label>{{ form.product_review_done.label }}</label>
+                    <div class="yn-toggle">
+                        <input type="radio" required name="{{ form.product_review_done.html_name }}" value="نعم"
+                            id="{{ form.product_review_done.auto_id }}_yes" {% if form.product_review_done.value=="نعم"
+                            %}checked{% endif %}>
+                        <label for="{{ form.product_review_done.auto_id }}_yes">✓ نعم</label>
+                        <input type="radio" name="{{ form.product_review_done.html_name }}" value="لا"
+                            id="{{ form.product_review_done.auto_id }}_no" {% if form.product_review_done.value=="لا"
+                            %}checked{% endif %}>
+                        <label for="{{ form.product_review_done.auto_id }}_no">✕ لا</label>
+                    </div>
+                </div>
+
+                <!-- No Sold Out -->
+                <div class="form-group">
+                    <label>{{ form.no_sold_out.label }}</label>
+                    <div class="yn-toggle">
+                        <input type="radio" required name="{{ form.no_sold_out.html_name }}" value="نعم"
+                            id="{{ form.no_sold_out.auto_id }}_yes" {% if form.no_sold_out.value=="نعم" %}checked{%
+                            endif %}>
+                        <label for="{{ form.no_sold_out.auto_id }}_yes">✓ نعم</label>
+                        <input type="radio" name="{{ form.no_sold_out.html_name }}" value="لا"
+                            id="{{ form.no_sold_out.auto_id }}_no" {% if form.no_sold_out.value=="لا" %}checked{% endif
+                            %}>
+                        <label for="{{ form.no_sold_out.auto_id }}_no">✕ لا</label>
+                    </div>
+                </div>
+
+                <!-- Quantity Review -->
+                <div class="form-group">
+                    <label>{{ form.quantity_review_done.label }}</label>
+                    <div class="yn-toggle">
+                        <input type="radio" required name="{{ form.quantity_review_done.html_name }}" value="نعم"
+                            id="{{ form.quantity_review_done.auto_id }}_yes" {% if
+                            form.quantity_review_done.value=="نعم" %}checked{% endif %}>
+                        <label for="{{ form.quantity_review_done.auto_id }}_yes">✓ نعم</label>
+                        <input type="radio" name="{{ form.quantity_review_done.html_name }}" value="لا"
+                            id="{{ form.quantity_review_done.auto_id }}_no" {% if form.quantity_review_done.value=="لا"
+                            %}checked{% endif %}>
+                        <label for="{{ form.quantity_review_done.auto_id }}_no">✕ لا</label>
+                    </div>
+                </div>
+
+                <!-- Expiry Logic -->
+                <div class="form-group">
+                    <label>{{ form.expiry_verified.label }}</label>
+                    <div class="yn-toggle">
+                        <input type="radio" required name="{{ form.expiry_verified.html_name }}" value="نعم"
+                            id="{{ form.expiry_verified.auto_id }}_yes" {% if form.expiry_verified.value=="نعم"
+                            %}checked{% endif %}>
+                        <label for="{{ form.expiry_verified.auto_id }}_yes">✓ نعم</label>
+                        <input type="radio" name="{{ form.expiry_verified.html_name }}" value="لا"
+                            id="{{ form.expiry_verified.auto_id }}_no" {% if form.expiry_verified.value=="لا"
+                            %}checked{% endif %}>
+                        <label for="{{ form.expiry_verified.auto_id }}_no">✕ لا</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Shipment, Arrival & Location -->
+            <div class="section" data-section="3">
+                <div class="section-header">
+                    <div class="section-icon">📍</div>
+                    <div class="section-title">الموقع والوصول</div>
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.visit_location.label }}</label>
+                    <div style="display: flex; gap: 10px;">
+                        {{ form.visit_location }}
+                        <button type="button" id="getLocationBtn" class="action-btn">📍 تحديد</button>
+                    </div>
+                    <small id="locationStatus"
+                        style="color: var(--text-secondary); display: block; margin-top: 4px;"></small>
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.arrival_time.label }}</label>
+                    <div style="display: flex; gap: 10px;">
+                        {{ form.arrival_time }}
+                        <button type="button" id="setNowBtn" class="action-btn">🕒 الآن</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.shipment_info.label }}</label>
+                    {{ form.shipment_info }}
+                </div>
+            </div>
+
+            <!-- Section 4: Stock -->
+            <div class="section" data-section="4">
+                <div class="section-header">
+                    <div class="section-icon">📦</div>
+                    <div class="section-title">المخزون</div>
+                </div>
+                <div class="form-group">
+                    <label>{{ form.stock_details.label }}</label>
+                    {{ form.stock_details }}
+                </div>
+            </div>
+
+            <!-- Section 5: Ratings -->
+            <div class="section" data-section="5">
+                <div class="section-header">
+                    <div class="section-icon">⭐</div>
+                    <div class="section-title">التقييمات</div>
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.cleanliness_rating.label }}</label>
+                    <div class="star-rating" data-target="id_cleanliness_rating">
+                        <input type="radio" required name="cleanliness_rating" value="5" id="clean_5">
+                        <label for="clean_5">★</label>
+                        <input type="radio" name="cleanliness_rating" value="4" id="clean_4">
+                        <label for="clean_4">★</label>
+                        <input type="radio" name="cleanliness_rating" value="3" id="clean_3">
+                        <label for="clean_3">★</label>
+                        <input type="radio" name="cleanliness_rating" value="2" id="clean_2">
+                        <label for="clean_2">★</label>
+                        <input type="radio" name="cleanliness_rating" value="1" id="clean_1">
+                        <label for="clean_1">★</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.customer_satisfaction.label }}</label>
+                    <div class="star-rating" data-target="id_customer_satisfaction">
+                        <input type="radio" required name="customer_satisfaction" value="5" id="sat_5">
+                        <label for="sat_5">★</label>
+                        <input type="radio" name="customer_satisfaction" value="4" id="sat_4">
+                        <label for="sat_4">★</label>
+                        <input type="radio" name="customer_satisfaction" value="3" id="sat_3">
+                        <label for="sat_3">★</label>
+                        <input type="radio" name="customer_satisfaction" value="2" id="sat_2">
+                        <label for="sat_2">★</label>
+                        <input type="radio" name="customer_satisfaction" value="1" id="sat_1">
+                        <label for="sat_1">★</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 6: Photos -->
+            <div class="section" data-section="6">
+                <div class="section-header">
+                    <div class="section-icon">📸</div>
+                    <div class="section-title">صور الماكينة</div>
+                </div>
+                <div class="form-group">
+                    <div class="photo-upload-area" id="photoUploadArea">
+                        <div class="upload-icon">📷</div>
+                        <div class="upload-text">اضغط لإضافة صور أو اسحبها هنا</div>
+                        <div class="upload-hint">يمكنك رفع عدة صور</div>
+                        <input type="file" name="machine_photos" id="photoInput" multiple accept="image/*" required>
+                    </div>
+                    <div class="photo-preview-grid" id="photoPreview"></div>
+                </div>
+            </div>
+
+            <!-- Section 7: Metrics -->
+            <div class="section" data-section="7">
+                <div class="section-header">
+                    <div class="section-icon">📊</div>
+                    <div class="section-title">المعاملات</div>
+                </div>
+                <div class="form-group">
+                    <label><span class="req">*</span> {{ form.transactions.label }}</label>
+                    {{ form.transactions }}
+                </div>
+                <div class="form-group">
+                    <label>{{ form.voids.label }}</label>
+                    {{ form.voids }}
+                </div>
+            </div>
+
+            <!-- Section 8: Issues -->
+            <div class="section" data-section="8">
+                <div class="section-header">
+                    <div class="section-icon">⚠️</div>
+                    <div class="section-title">المشاكل والملاحظات</div>
+                </div>
+                <div class="form-group">
+                    <label>{{ form.product_issue.label }}</label>
+                    {{ form.product_issue }}
+                </div>
+                <div class="form-group">
+                    <label>{{ form.machine_issue.label }}</label>
+                    {{ form.machine_issue }}
+                </div>
+                <div class="form-group">
+                    <label>{{ form.comments.label }}</label>
+                    {{ form.comments }}
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Sticky Submit -->
+    <div class="submit-section">
+        <button type="submit" form="visitForm" class="submit-btn" id="submitBtn">
+            📝 تسجيل الزيارة
+        </button>
+    </div>
+
+    <script>
+        // === Photo Preview ===
+        const photoInput = document.getElementById('photoInput');
+        const photoPreview = document.getElementById('photoPreview');
+        let selectedFiles = new DataTransfer();
+
+        photoInput.addEventListener('change', function (e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                selectedFiles.items.add(file);
+                const reader = new FileReader();
+                reader.onload = function (ev) {
+                    const div = document.createElement('div');
+                    div.className = 'photo-preview-item';
+                    div.innerHTML = `
+                        <img src="${ev.target.result}" alt="preview">
+                        <button type="button" class="remove-btn" onclick="removePhoto(this, ${selectedFiles.files.length - 1})">×</button>
+                    `;
+                    photoPreview.appendChild(div);
+                    updateProgress();
+                };
+                reader.readAsDataURL(file);
+            });
+            photoInput.files = selectedFiles.files;
+        });
+
+        function removePhoto(btn, index) {
+            const newFiles = new DataTransfer();
+            Array.from(selectedFiles.files).forEach((f, i) => {
+                if (i !== index) newFiles.items.add(f);
+            });
+            selectedFiles = newFiles;
+            photoInput.files = selectedFiles.files;
+            btn.parentElement.remove();
+            // Re-index remove buttons
+            document.querySelectorAll('.photo-preview-item .remove-btn').forEach((b, i) => {
+                b.setAttribute('onclick', `removePhoto(this, ${i})`);
+            });
+            updateProgress();
+        }
+
+        // === Progress Tracking ===
+        function updateProgress() {
+            const form = document.getElementById('visitForm');
+            const total = 17;
+            let filled = 0;
+
+            // Check select fields
+            form.querySelectorAll('select').forEach(el => {
+                if (el.value && el.value !== '') filled++;
+            });
+
+            // Check text/number inputs
+            form.querySelectorAll('input[type="text"], input[type="number"]').forEach(el => {
+                if (el.value.trim() !== '') filled++;
+            });
+
+            // Check textareas
+            form.querySelectorAll('textarea').forEach(el => {
+                if (el.value.trim() !== '') filled++;
+            });
+
+            // Check radio groups (yn-toggle + star-rating)
+            const radioGroups = new Set();
+            form.querySelectorAll('input[type="radio"]').forEach(el => radioGroups.add(el.name));
+            radioGroups.forEach(name => {
+                const checked = form.querySelector(`input[name="${name}"]:checked`);
+                if (checked) filled++;
+            });
+
+            // Check photos
+            if (selectedFiles.files.length > 0) filled++;
+
+            const pct = Math.min(100, Math.round((filled / total) * 100));
+            document.getElementById('progressFill').style.width = pct + '%';
+            document.getElementById('progressText').textContent = `${filled} / ${total} حقل مكتمل (${pct}%)`;
+        }
+
+        // Listen for changes
+        document.getElementById('visitForm').addEventListener('input', updateProgress);
+        document.getElementById('visitForm').addEventListener('change', updateProgress);
+
+        // Initial
+        updateProgress();
+
+        // === Location & Time ===
+        document.getElementById('getLocationBtn').addEventListener('click', function () {
+            const btn = this;
+            const status = document.getElementById('locationStatus');
+            const input = document.getElementById('id_visit_location');
+
+            if (!navigator.geolocation) {
+                status.textContent = '❌ المتصفح لا يدعم تحديد الموقع';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ جاري تحديد الموقع...';
+            status.textContent = '';
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude.toFixed(6);
+                    const lng = position.coords.longitude.toFixed(6);
+                    input.value = `${lat}, ${lng}`;
+                    status.textContent = `✅ تم التحديد: ${lat}, ${lng}`;
+                    btn.textContent = '📍 تحديث';
+                    btn.disabled = false;
+                    updateProgress();
+                },
+                (error) => {
+                    status.textContent = '❌ تعذر تحديد الموقع. تأكد من تفعيل GPS.';
+                    btn.textContent = '📍 إعادة المحاولة';
+                    btn.disabled = false;
+                }
+            );
+        });
+
+        document.getElementById('setNowBtn').addEventListener('click', function () {
+            const input = document.getElementById('id_arrival_time');
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            input.value = now.toISOString().slice(0, 16);
+            updateProgress();
+        });
+
+        // === Form Submit Feedback ===
+        document.getElementById('visitForm').addEventListener('submit', function () {
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ جاري الحفظ...';
+        });
+    </script>
+</body>
+
+</html>

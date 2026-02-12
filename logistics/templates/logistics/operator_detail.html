@@ -1,0 +1,110 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}{{ operator.name }} - Operator Profile{% endblock %}
+
+{% block content %}
+<header>
+    <h1>👤 {{ operator.name }}</h1>
+    <p>Operator Profile & Performance</p>
+</header>
+
+<div class="controls">
+    <a href="{% url 'logistics:dashboard' %}?month={{ selected_month|date:'Y-m' }}">
+        <button type="button">← Back to Dashboard</button>
+    </a>
+
+    <form method="get" action="" style="display: flex; gap: 1rem; align-items: center;">
+        <label for="month-select">Month:</label>
+        <select name="month" id="month-select" onchange="this.form.submit()">
+            {% for month in available_months %}
+            <option value="{{ month|date:'Y-m' }}" {% if month == selected_month %}selected{% endif %}>
+                {{ month|date:"F Y" }}
+            </option>
+            {% empty %}
+            <option value="{{ selected_month|date:'Y-m' }}" selected>
+                {{ selected_month|date:"F Y" }}
+            </option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+{% if messages %}
+<div class="messages">
+    {% for message in messages %}
+    <div class="message {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="label">Total Visits</div>
+        <div class="value">{{ total_visits }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Machines Visited</div>
+        <div class="value">{{ unique_machines }}</div>
+    </div>
+
+    <!-- Rating Card -->
+    {% if user.is_superuser %}
+    <div class="stat-card warning" style="grid-column: span 2;">
+        <div class="label">Daily Rating (1-10)</div>
+        <form method="post" style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
+            {% csrf_token %}
+            <input type="number" name="rating" min="0" max="10" value="{{ current_rating }}"
+                style="width: 80px; padding: 0.5rem; border: 1px solid var(--border); border-radius: 0.25rem; background: var(--bg-body); color: var(--text-primary); font-size: 1.25rem; font-weight: bold;">
+            <button type="submit" class="primary"
+                style="padding: 0.5rem 1.5rem; font-size: 1rem; height: 42px;">Save</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<h3>Visit History ({{ selected_month|date:"F Y" }})</h3>
+
+{% if logs %}
+<div class="data-table">
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Machine</th>
+                <th>Transactions</th>
+                <th>Voids</th>
+                <th>Void %</th>
+                <th>Comments</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.timestamp|date:"M d, H:i" }}</td>
+                <td>
+                    <a href="{% url 'logistics:machine_detail' log.machine.id %}?month={{ selected_month|date:'Y-m' }}">
+                        {{ log.machine.name }}
+                    </a>
+                </td>
+                <td>{{ log.transactions }}</td>
+                <td>{{ log.voids }}</td>
+                <td>
+                    <span
+                        class="badge {% if log.void_percentage > 5 %}badge-danger{% elif log.void_percentage > 2 %}badge-warning{% else %}badge-success{% endif %}">
+                        {{ log.void_percentage }}%
+                    </span>
+                </td>
+                <td style="max-width: 300px; font-size: 0.875rem;">{{ log.comments|truncatewords:15|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>No Logs Found</h3>
+    <p>No visit logs available for this operator in {{ selected_month|date:"F Y" }}.</p>
+</div>
+{% endif %}
+
+{% endblock %}

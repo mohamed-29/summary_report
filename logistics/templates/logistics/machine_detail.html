@@ -1,0 +1,78 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}{{ machine.name }} - Machine Details{% endblock %}
+
+{% block content %}
+<header>
+    <h1>🔧 {{ machine.name }}</h1>
+    <p>{{ machine.location|default:"No location specified" }}</p>
+</header>
+
+<div class="controls">
+    <a href="{% url 'logistics:dashboard' %}{% if request.GET.month %}?month={{ request.GET.month }}{% endif %}">
+        <button type="button">← Back to Dashboard</button>
+    </a>
+</div>
+
+{% if aliases %}
+<div class="stat-card" style="margin-bottom: 2rem;">
+    <div class="label">Known Aliases (Typos)</div>
+    <div style="margin-top: 0.5rem;">
+        {% for alias in aliases %}
+        <span class="badge badge-warning" style="margin-right: 0.5rem; margin-bottom: 0.25rem;">
+            {{ alias.alias }}
+            <small>({{ alias.source }})</small>
+        </span>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if logs %}
+<div class="data-table">
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Operator</th>
+                <th>Transactions</th>
+                <th>Voids</th>
+                <th>Void %</th>
+                <th>Comments</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.timestamp|date:"M d, Y H:i" }}</td>
+                <td>
+                    {% if log.operator %}
+                    <a href="{% url 'logistics:operator_detail' log.operator.id %}">
+                        {{ log.operator.name }}
+                    </a>
+                    {% else %}
+                    Unknown
+                    {% endif %}
+                </td>
+                <td>{{ log.transactions }}</td>
+                <td>{{ log.voids }}</td>
+                <td>
+                    <span
+                        class="badge {% if log.void_percentage > 5 %}badge-danger{% elif log.void_percentage > 2 %}badge-warning{% else %}badge-success{% endif %}">
+                        {{ log.void_percentage }}%
+                    </span>
+                </td>
+                <td style="max-width: 300px; font-size: 0.875rem;">{{ log.comments|truncatewords:20|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>No Logs Found</h3>
+    <p>No visit logs available for this machine.</p>
+</div>
+{% endif %}
+
+{% endblock %}

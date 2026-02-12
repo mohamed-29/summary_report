@@ -1,0 +1,159 @@
+{% extends 'logistics/base.html' %}
+
+{% block content %}
+<header style="display: flex; justify-content: space-between; align-items: center;">
+    <h1>Daily Machine Summary</h1>
+    <form method="get" style="display: flex; gap: 0.5rem; align-items: center;">
+        <label for="date" style="color: var(--text-secondary);">Date:</label>
+        <input type="date" id="date" name="date" value="{{ selected_date|date:'Y-m-d' }}"
+            style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary);"
+            onchange="this.form.submit()">
+    </form>
+</header>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="label">Total Machines</div>
+        <div class="value">{{ total_machines }}</div>
+    </div>
+    <div class="stat-card success">
+        <div class="label">Visited by Operator</div>
+        <div class="value">{{ visited_count }}</div>
+    </div>
+    <div class="stat-card box-info" style="border-color: #3b82f6;">
+        <div class="label" style="color: #60a5fa;">Visited by Car</div>
+        <div class="value" style="color: #60a5fa;">{{ car_visited_count }}</div>
+    </div>
+    <div class="stat-card warning">
+        <div class="label">Issues Reported</div>
+        <div class="value">{{ issues_count }}</div>
+    </div>
+</div>
+
+<div class="data-table">
+    <table>
+        <thead>
+            <tr>
+                <th>Machine</th>
+                <th>Operator Visit</th>
+                <th>Car Visit</th>
+                <th>Transactions</th>
+                <th>Location / Distance</th>
+                <th>Status/Issues</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in summary_data %}
+            <tr>
+                <td>
+                    <a href="{% url 'logistics:machine_detail' row.machine.id %}">
+                        {{ row.machine.name }}
+                    </a>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                        {{ row.machine.location|default:"" }}
+                    </div>
+                </td>
+
+                <!-- Operator Visit Column -->
+                <td>
+                    {% if row.visit_log %}
+                    <strong>{{ row.visit_log.operator.name|default:"Unknown" }}</strong>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                        {{ row.visit_log.timestamp|time:"H:i" }}
+                    </div>
+                    {% else %}
+                    <span style="color: var(--text-secondary);">-</span>
+                    {% endif %}
+                </td>
+
+                <!-- Car Visit Column -->
+                <td>
+                    {% if row.car_stops %}
+                    {% for stop in row.car_stops %}
+                    <div>
+                        <span>🚗 {{ stop.car_log.driver.name|default:"Driver" }}</span>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">(Stop #{{ stop.order|add:1
+                            }})</span>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <span style="color: var(--text-secondary);">-</span>
+                    {% endif %}
+                </td>
+
+                <!-- Transactions -->
+                <td>
+                    {% if row.visit_log %}
+                    {{ row.visit_log.transactions }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+
+                <!-- Location / Distance Column -->
+                <td>
+                    {% if row.distance_display %}
+                    <a href="{{ row.both_map_url }}" target="_blank"
+                        style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 8px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; font-size: 0.85rem; text-decoration: none; font-weight: 600; transition: all 0.2s;">
+                        📍 {{ row.distance_display }}
+                    </a>
+                    <div style="margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap;">
+                        {% if row.machine_map_url %}
+                        <a href="{{ row.machine_map_url }}" target="_blank"
+                            style="font-size: 0.7rem; color: var(--text-secondary); text-decoration: underline;">
+                            🏭 Machine
+                        </a>
+                        {% endif %}
+                        {% if row.visit_map_url %}
+                        <a href="{{ row.visit_map_url }}" target="_blank"
+                            style="font-size: 0.7rem; color: var(--text-secondary); text-decoration: underline;">
+                            👤 Visit
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% elif row.machine_map_url %}
+                    <a href="{{ row.machine_map_url }}" target="_blank"
+                        style="font-size: 0.8rem; color: #60a5fa; text-decoration: none;">
+                        📍 Machine
+                    </a>
+                    {% if row.visit_map_url %}
+                    <br>
+                    <a href="{{ row.visit_map_url }}" target="_blank"
+                        style="font-size: 0.8rem; color: #60a5fa; text-decoration: none;">
+                        👤 Visit
+                    </a>
+                    {% endif %}
+                    {% elif row.visit_map_url %}
+                    <a href="{{ row.visit_map_url }}" target="_blank"
+                        style="font-size: 0.8rem; color: #60a5fa; text-decoration: none;">
+                        👤 Visit
+                    </a>
+                    {% else %}
+                    <span style="color: var(--text-secondary);">-</span>
+                    {% endif %}
+                </td>
+
+                <!-- Status/Issues -->
+                <td>
+                    {% if row.visit_log.machine_issue or row.visit_log.product_issue %}
+                    <span class="badge badge-danger">Op Issue</span>
+                    <div style="font-size: 0.75rem; color: var(--danger); margin-top: 0.25rem;">
+                        {{ row.visit_log.machine_issue }} {{ row.visit_log.product_issue }}
+                    </div>
+                    {% elif row.car_issues %}
+                    <span class="badge badge-warning">Car Issue</span>
+                    <div style="font-size: 0.75rem; color: var(--warning); margin-top: 0.25rem;">{{ row.car_issues }}
+                    </div>
+                    {% elif row.visit_log or row.car_stops %}
+                    <span class="badge badge-success">Visited</span>
+                    {% else %}
+                    <span class="badge" style="background: var(--bg-hover); color: var(--text-secondary);">No
+                        Visit</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

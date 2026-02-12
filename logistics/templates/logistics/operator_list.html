@@ -1,0 +1,101 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Operators List - {{ selected_month|date:"F Y" }}{% endblock %}
+
+{% block content %}
+<header>
+    <h1>👥 Operators & Drivers</h1>
+    <p>Performance Overview for {{ selected_month|date:"F Y" }}</p>
+</header>
+
+<div class="controls">
+    <a href="{% url 'logistics:dashboard' %}?month={{ selected_month|date:'Y-m' }}">
+        <button type="button">← Back to Dashboard</button>
+    </a>
+
+    <form method="get" action="" style="display: flex; gap: 1rem; align-items: center;">
+        <label for="month-select">Month:</label>
+        <select name="month" id="month-select" onchange="this.form.submit()">
+            {% for month in available_months %}
+            <option value="{{ month|date:'Y-m' }}" {% if month == selected_month %}selected{% endif %}>
+                {{ month|date:"F Y" }}
+            </option>
+            {% empty %}
+            <option value="{{ selected_month|date:'Y-m' }}" selected>
+                {{ selected_month|date:"F Y" }}
+            </option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+<div class="data-table">
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Total Visits</th>
+                <th>Machines Visited</th>
+                <th>Monthly Rating</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for op in operators %}
+            <tr>
+                <td>
+                    <a href="{% url 'logistics:operator_detail' op.id %}?month={{ selected_month|date:'Y-m' }}"
+                        style="font-weight: bold;">
+                        {{ op.name }}
+                    </a>
+                </td>
+                <td>
+                    {% if op.is_driver %}
+                    <span class="badge badge-warning">Driver</span>
+                    {% else %}
+                    <span class="badge badge-success">Operator</span>
+                    {% endif %}
+                </td>
+                <td>{{ op.visit_count }}</td>
+                <td>{{ op.machine_count }}</td>
+                <td>
+                    {% if op.daily_rating != '-' %}
+                    <span style="font-weight: bold; color: var(--text-primary);">⭐ {{ op.daily_rating }}/10</span>
+                    {% else %}
+                    <span style="color: var(--text-secondary);">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'logistics:operator_detail' op.id %}?month={{ selected_month|date:'Y-m' }}">
+                        <button type="button" class="small">View Profile</button>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 2rem;">No operators found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+    button.small {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    button.small:hover {
+        background-color: var(--primary-hover);
+    }
+</style>
+
+{% endblock %}
