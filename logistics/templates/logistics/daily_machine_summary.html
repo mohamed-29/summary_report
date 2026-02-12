@@ -72,8 +72,7 @@
                     {% for stop in row.car_stops %}
                     <div>
                         <span>🚗 {{ stop.car_log.driver.name|default:"Driver" }}</span>
-                        <span style="font-size: 0.75rem; color: var(--text-secondary);">(Stop #{{ stop.order|add:1
-                            }})</span>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">(Stop #{{ stop.order|add:1 }})</span>
                     </div>
                     {% endfor %}
                     {% else %}

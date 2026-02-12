@@ -564,12 +564,10 @@
                     <label>{{ form.received_keys.label }}</label>
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.received_keys.html_name }}" value="نعم"
-                            id="{{ form.received_keys.auto_id }}_yes" {% if form.received_keys.value=="نعم" %}checked{%
-                            endif %}>
+                            id="{{ form.received_keys.auto_id }}_yes" {% if form.received_keys.value == "نعم" %}checked{% endif %}>
                         <label for="{{ form.received_keys.auto_id }}_yes">✓ نعم</label>
                         <input type="radio" name="{{ form.received_keys.html_name }}" value="لا"
-                            id="{{ form.received_keys.auto_id }}_no" {% if form.received_keys.value=="لا" %}checked{%
-                            endif %}>
+                            id="{{ form.received_keys.auto_id }}_no" {% if form.received_keys.value == "لا" %}checked{% endif %}>
                         <label for="{{ form.received_keys.auto_id }}_no">✕ لا</label>
                     </div>
                 </div>
@@ -579,12 +577,10 @@
                     <label>{{ form.received_locations.label }}</label>
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.received_locations.html_name }}" value="نعم"
-                            id="{{ form.received_locations.auto_id }}_yes" {% if form.received_locations.value=="نعم"
-                            %}checked{% endif %}>
+                            id="{{ form.received_locations.auto_id }}_yes" {% if form.received_locations.value == "نعم" %}checked{% endif %}>
                         <label for="{{ form.received_locations.auto_id }}_yes">✓ نعم</label>
                         <input type="radio" name="{{ form.received_locations.html_name }}" value="لا"
-                            id="{{ form.received_locations.auto_id }}_no" {% if form.received_locations.value=="لا"
-                            %}checked{% endif %}>
+                            id="{{ form.received_locations.auto_id }}_no" {% if form.received_locations.value == "لا" %}checked{% endif %}>
                         <label for="{{ form.received_locations.auto_id }}_no">✕ لا</label>
                     </div>
                 </div>
@@ -594,12 +590,10 @@
                     <label>{{ form.received_shipment_full.label }}</label>
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.received_shipment_full.html_name }}" value="نعم"
-                            id="{{ form.received_shipment_full.auto_id }}_yes" {% if
-                            form.received_shipment_full.value=="نعم" %}checked{% endif %}>
+                            id="{{ form.received_shipment_full.auto_id }}_yes" {% if form.received_shipment_full.value == "نعم" %}checked{% endif %}>
                         <label for="{{ form.received_shipment_full.auto_id }}_yes">✓ نعم</label>
                         <input type="radio" name="{{ form.received_shipment_full.html_name }}" value="لا"
-                            id="{{ form.received_shipment_full.auto_id }}_no" {% if
-                            form.received_shipment_full.value=="لا" %}checked{% endif %}>
+                            id="{{ form.received_shipment_full.auto_id }}_no" {% if form.received_shipment_full.value == "لا" %}checked{% endif %}>
                         <label for="{{ form.received_shipment_full.auto_id }}_no">✕ لا</label>
                     </div>
                 </div>
