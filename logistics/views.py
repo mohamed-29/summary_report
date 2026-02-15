@@ -767,7 +767,9 @@ def operator_login(request):
 
 
 def visit_log_form(request):
-    """Form for operators to submit their visit logs with photos."""
+    """Form for operators to submit their visit logs with photos.
+    Supports Check-In / Check-Out alternation and live-save (draft) mode.
+    """
     import os
     from django.conf import settings as django_settings
     from .forms import VisitLogForm
@@ -784,32 +786,135 @@ def visit_log_form(request):
         request.session.flush()
         return redirect('logistics:operator_login')
 
-    success = False
+    # ----- Determine current state -----
+    # 1) Check for an incomplete draft
+    draft = VisitLog.objects.filter(operator=operator, is_completed=False).order_by('-created_at').first()
+
+    # 2) Determine form type (check in or check out)
+    if draft:
+        # Resume the draft
+        is_check_in = draft.is_check_in
+        visit_instance = draft
+    else:
+        # Look at the last completed record
+        last_completed = VisitLog.objects.filter(operator=operator, is_completed=True).order_by('-created_at').first()
+        if last_completed and last_completed.is_check_in:
+            # Last was check in -> next is check out
+            is_check_in = False
+        else:
+            # Last was check out or no records -> next is check in
+            is_check_in = True
+        visit_instance = None
+
+    form_type = 'check_in' if is_check_in else 'check_out'
+    form_type_label = 'تسجيل الدخول (Check In)' if is_check_in else 'تسجيل الخروج (Check Out)'
 
     if request.method == 'POST':
-        form = VisitLogForm(request.POST, request.FILES)
+        action = request.POST.get('action', 'complete')  # 'draft' or 'complete'
+        is_draft = (action == 'draft')
+
+        if visit_instance:
+            form = VisitLogForm(request.POST, request.FILES, instance=visit_instance, draft=is_draft)
+        else:
+            form = VisitLogForm(request.POST, request.FILES, draft=is_draft)
+
         if form.is_valid():
             visit = form.save(commit=False)
             visit.operator = operator
-            visit.timestamp = timezone.now()
-            visit.raw_machine_name = visit.machine.name
+            visit.is_check_in = is_check_in
+            if not visit.timestamp:
+                visit.timestamp = timezone.now()
+            visit.raw_machine_name = visit.machine.name if visit.machine else ''
 
-            # Handle multiple photo uploads via VisitLogImage
-            photos = request.FILES.getlist('machine_photos')
-            visit.save()
-            for photo in photos:
-                VisitLogImage.objects.create(visit_log=visit, image=photo)
-            
-            messages.success(request, 'تم تسجيل الزيارة بنجاح!')
+            if is_draft:
+                visit.is_completed = False
+                visit.save()
+                messages.info(request, 'تم حفظ المسودة بنجاح. يمكنك استكمال النموذج لاحقاً.')
+            else:
+                visit.is_completed = True
+                visit.save()
+                # Handle multiple photo uploads via VisitLogImage
+                photos = request.FILES.getlist('machine_photos')
+                for photo in photos:
+                    VisitLogImage.objects.create(visit_log=visit, image=photo)
+                messages.success(request, f'تم {form_type_label} بنجاح!')
+
             return redirect('logistics:visit_form')
-
     else:
-        form = VisitLogForm()
+        if visit_instance:
+            form = VisitLogForm(instance=visit_instance, draft=True)
+        else:
+            form = VisitLogForm(draft=True)
 
     return render(request, 'logistics/visit_form.html', {
         'form': form,
         'operator': operator,
+        'form_type': form_type,
+        'form_type_label': form_type_label,
+        'is_draft': visit_instance is not None,
     })
+
+
+@require_POST
+def visit_auto_save(request):
+    """AJAX endpoint for live-saving visit form data as a draft."""
+    from .forms import VisitLogForm
+    from .models import VisitLogImage
+
+    operator_id = request.session.get('operator_id')
+    if not operator_id:
+        return JsonResponse({'status': 'error', 'message': 'Not authenticated'}, status=401)
+
+    try:
+        operator = Operator.objects.get(id=operator_id)
+    except Operator.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Operator not found'}, status=404)
+
+    # Find or create draft
+    draft = VisitLog.objects.filter(operator=operator, is_completed=False).order_by('-created_at').first()
+
+    if draft:
+        is_check_in = draft.is_check_in
+    else:
+        last_completed = VisitLog.objects.filter(operator=operator, is_completed=True).order_by('-created_at').first()
+        is_check_in = not (last_completed and last_completed.is_check_in)
+
+    if draft:
+        form = VisitLogForm(request.POST, instance=draft, draft=True)
+    else:
+        form = VisitLogForm(request.POST, draft=True)
+
+    if form.is_valid():
+        visit = form.save(commit=False)
+        visit.operator = operator
+        visit.is_check_in = is_check_in
+        visit.is_completed = False
+        if not visit.timestamp:
+            visit.timestamp = timezone.now()
+        if visit.machine:
+            visit.raw_machine_name = visit.machine.name
+        visit.save()
+        return JsonResponse({'status': 'ok', 'draft_id': visit.id})
+    else:
+        # Even if form is invalid in draft mode, try to save what we can
+        # by creating/updating raw instance
+        if draft:
+            # Update fields that were provided
+            for field_name in form.fields:
+                if field_name in request.POST and request.POST[field_name]:
+                    try:
+                        if field_name == 'machine':
+                            from .models import Machine as MachineModel
+                            mid = request.POST[field_name]
+                            if mid:
+                                draft.machine = MachineModel.objects.get(id=int(mid))
+                        elif hasattr(draft, field_name):
+                            setattr(draft, field_name, request.POST[field_name])
+                    except Exception:
+                        pass
+            draft.save()
+            return JsonResponse({'status': 'ok', 'draft_id': draft.id})
+        return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
 
 
 def car_log_form(request):

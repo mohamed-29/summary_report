@@ -41,8 +41,8 @@ class VisitLogImageInline(admin.TabularInline):
 
 @admin.register(VisitLog)
 class VisitLogAdmin(admin.ModelAdmin):
-    list_display = ['timestamp', 'operator', 'machine', 'transactions', 'voids', 'void_percentage']
-    list_filter = ['machine', 'operator', 'timestamp']
+    list_display = ['timestamp', 'operator', 'machine', 'is_check_in', 'is_completed', 'transactions', 'voids', 'void_percentage']
+    list_filter = ['is_check_in', 'is_completed', 'machine', 'operator', 'timestamp']
     search_fields = ['machine__name', 'operator__name', 'comments']
     date_hierarchy = 'timestamp'
     ordering = ['-timestamp']

@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نموذج تسجيل الزيارة | iVend</title>
+    <title>{{ form_type_label }} | iVend</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -387,6 +387,61 @@
             color: var(--error);
         }
 
+        /* Form type badge */
+        .form-type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .form-type-badge.check-in {
+            background: rgba(0, 184, 148, 0.15);
+            border: 1px solid rgba(0, 184, 148, 0.4);
+            color: var(--success);
+        }
+
+        .form-type-badge.check-out {
+            background: rgba(253, 203, 110, 0.15);
+            border: 1px solid rgba(253, 203, 110, 0.4);
+            color: var(--warning);
+        }
+
+        .draft-indicator {
+            font-size: 0.75rem;
+            color: var(--warning);
+            text-align: center;
+            margin-bottom: 12px;
+            padding: 8px;
+            background: rgba(253, 203, 110, 0.1);
+            border: 1px solid rgba(253, 203, 110, 0.25);
+            border-radius: 10px;
+        }
+
+        .auto-save-status {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 4px 0;
+            min-height: 20px;
+        }
+
+        .auto-save-status.saving {
+            color: var(--warning);
+        }
+
+        .auto-save-status.saved {
+            color: var(--success);
+        }
+
+        .auto-save-status.error {
+            color: var(--error);
+        }
+
         /* Submit */
         .submit-section {
             position: fixed;
@@ -395,23 +450,27 @@
             right: 0;
             background: var(--bg-card);
             border-top: 1px solid var(--border);
-            padding: 16px 20px;
+            padding: 12px 20px;
             z-index: 100;
             backdrop-filter: blur(10px);
         }
 
-        .submit-btn {
-            width: 100%;
+        .submit-buttons {
             max-width: 640px;
             margin: 0 auto;
-            display: block;
-            padding: 16px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .submit-btn {
+            flex: 2;
+            padding: 14px;
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
             border: none;
             border-radius: 14px;
             font-family: 'Cairo', sans-serif;
-            font-size: 1.05rem;
+            font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -426,6 +485,24 @@
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
+        }
+
+        .draft-btn {
+            flex: 1;
+            padding: 14px;
+            background: rgba(253, 203, 110, 0.1);
+            border: 2px solid rgba(253, 203, 110, 0.3);
+            color: var(--warning);
+            border-radius: 14px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .draft-btn:hover {
+            background: rgba(253, 203, 110, 0.2);
         }
 
         /* Success message */
@@ -496,6 +573,9 @@
                 <div class="code">{{ operator.code }}</div>
             </div>
         </div>
+        <div class="form-type-badge {% if form_type == 'check_in' %}check-in{% else %}check-out{% endif %}">
+            {% if form_type == 'check_in' %}📥 Check In{% else %}📤 Check Out{% endif %}
+        </div>
         <a href="{% url 'logistics:operator_logout' %}" class="logout-btn">خروج ✕</a>
     </div>
 
@@ -508,6 +588,14 @@
     </div>
 
     <div class="form-container">
+
+        {% if is_draft %}
+        <div class="draft-indicator">
+            📝 لديك مسودة محفوظة - يتم استكمال النموذج من آخر مرة
+        </div>
+        {% endif %}
+
+        <div class="auto-save-status" id="autoSaveStatus"></div>
 
         {% if messages %}
         <div class="messages">
@@ -532,6 +620,7 @@
 
         <form method="post" enctype="multipart/form-data" id="visitForm">
             {% csrf_token %}
+            <input type="hidden" name="action" id="formAction" value="complete">
 
             <!-- Section 1: Machine Selection -->
             <div class="section" data-section="1">
@@ -771,9 +860,14 @@
 
     <!-- Sticky Submit -->
     <div class="submit-section">
-        <button type="submit" form="visitForm" class="submit-btn" id="submitBtn">
-            📝 تسجيل الزيارة
-        </button>
+        <div class="submit-buttons">
+            <button type="button" class="draft-btn" id="draftBtn" onclick="submitDraft()">
+                💾 حفظ مسودة
+            </button>
+            <button type="submit" form="visitForm" class="submit-btn" id="submitBtn">
+                {% if form_type == 'check_in' %}📥 تسجيل الدخول{% else %}📤 تسجيل الخروج{% endif %}
+            </button>
+        </div>
     </div>
 
     <script>
@@ -902,12 +996,73 @@
             updateProgress();
         });
 
+        // === Draft Submit ===
+        function submitDraft() {
+            document.getElementById('formAction').value = 'draft';
+            document.getElementById('visitForm').submit();
+        }
+
         // === Form Submit Feedback ===
-        document.getElementById('visitForm').addEventListener('submit', function () {
-            const btn = document.getElementById('submitBtn');
-            btn.disabled = true;
-            btn.textContent = '⏳ جاري الحفظ...';
+        document.getElementById('visitForm').addEventListener('submit', function (e) {
+            const action = document.getElementById('formAction').value;
+            if (action === 'complete') {
+                const btn = document.getElementById('submitBtn');
+                btn.disabled = true;
+                btn.textContent = '⏳ جاري الحفظ...';
+            } else {
+                const btn = document.getElementById('draftBtn');
+                btn.disabled = true;
+                btn.textContent = '⏳ جاري الحفظ...';
+            }
         });
+
+        // === Auto-Save (Live Save) ===
+        let autoSaveTimer = null;
+        const autoSaveUrl = '{% url "logistics:visit_auto_save" %}';
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const statusEl = document.getElementById('autoSaveStatus');
+
+        function doAutoSave() {
+            const form = document.getElementById('visitForm');
+            const formData = new FormData(form);
+            // Remove file inputs from auto-save (only save text data)
+            formData.delete('machine_photos');
+            formData.delete('action');
+
+            statusEl.textContent = '⏳ جاري الحفظ التلقائي...';
+            statusEl.className = 'auto-save-status saving';
+
+            fetch(autoSaveUrl, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfToken }
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        statusEl.textContent = '✅ تم الحفظ التلقائي';
+                        statusEl.className = 'auto-save-status saved';
+                    } else {
+                        statusEl.textContent = '⚠️ لم يتم الحفظ';
+                        statusEl.className = 'auto-save-status error';
+                    }
+                    setTimeout(() => { statusEl.textContent = ''; }, 3000);
+                })
+                .catch(() => {
+                    statusEl.textContent = '❌ خطأ في الحفظ التلقائي';
+                    statusEl.className = 'auto-save-status error';
+                    setTimeout(() => { statusEl.textContent = ''; }, 3000);
+                });
+        }
+
+        function scheduleAutoSave() {
+            if (autoSaveTimer) clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(doAutoSave, 2000); // 2 second debounce
+        }
+
+        // Trigger auto-save on any change
+        document.getElementById('visitForm').addEventListener('input', scheduleAutoSave);
+        document.getElementById('visitForm').addEventListener('change', scheduleAutoSave);
     </script>
 </body>
 

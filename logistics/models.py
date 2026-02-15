@@ -162,6 +162,11 @@ class VisitLog(models.Model):
         blank=True,
         help_text="Original machine name from Excel (before resolution)"
     )
+
+    # --- Check In/Out & Draft ---
+    is_check_in = models.BooleanField(default=True, help_text="True = Check In form, False = Check Out form")
+    is_completed = models.BooleanField(default=False, help_text="False = draft (live-save), True = submitted")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

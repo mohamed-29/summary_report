@@ -15,6 +15,7 @@ urlpatterns = [
     # Operator Frontend (Phase 9)
     path('form/login/', views.operator_login, name='operator_login'),
     path('form/', views.visit_log_form, name='visit_form'),
+    path('form/auto-save/', views.visit_auto_save, name='visit_auto_save'),
     path('form/car/', views.car_log_form, name='car_form'),
     path('form/logout/', views.operator_logout, name='operator_logout'),
     # Dashboard Auth

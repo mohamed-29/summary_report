@@ -132,17 +132,21 @@ class VisitLogForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.draft = kwargs.pop('draft', False)
         super().__init__(*args, **kwargs)
         
-        # Define fields that should NOT be required (the last 3)
-        not_required = ['product_issue', 'machine_issue', 'comments']
-        
-        # Iterate over all fields and set required=True unless in not_required list
-        for field_name, field in self.fields.items():
-            if field_name in not_required:
+        if self.draft:
+            # Draft / live-save mode: nothing is required
+            for field_name, field in self.fields.items():
                 field.required = False
-            else:
-                field.required = True
+        else:
+            # Completion mode: everything required except last 3
+            not_required = ['product_issue', 'machine_issue', 'comments']
+            for field_name, field in self.fields.items():
+                if field_name in not_required:
+                    field.required = False
+                else:
+                    field.required = True
                 
         # Set initial values for Boolean fields to match 'نعم'/'لا' choice keys
         if self.instance.pk:
