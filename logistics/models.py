@@ -27,6 +27,16 @@ class Operator(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if not self.code:
+            # Auto-generate a unique code
+            for _ in range(10):
+                new_code = generate_short_code()
+                if not Operator.objects.filter(code=new_code).exists():
+                    self.code = new_code
+                    break
+        super().save(*args, **kwargs)
+
 
 class Machine(models.Model):
     """Stores the canonical (correct) name of every vending machine."""
@@ -53,6 +63,16 @@ class Machine(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            # Auto-generate a unique code
+            for _ in range(10):
+                new_code = generate_short_code()
+                if not Machine.objects.filter(code=new_code).exists():
+                    self.code = new_code
+                    break
+        super().save(*args, **kwargs)
 
 
 class MachineAlias(models.Model):
@@ -101,7 +121,7 @@ class MachineAlias(models.Model):
 
 class VisitLog(models.Model):
     """Stores daily stats from on-site operator logs."""
-    timestamp = models.DateTimeField(help_text="Original timestamp from the log")
+    timestamp = models.DateTimeField(null=True, blank=True, help_text="Original timestamp from the log")
     operator = models.ForeignKey(
         Operator, 
         on_delete=models.SET_NULL, 
@@ -176,10 +196,16 @@ class VisitLog(models.Model):
         verbose_name_plural = "Visit Logs"
 
     def __str__(self):
-        return f"{self.machine.name} - {self.timestamp.strftime('%Y-%m-%d')}"
+        ts = self.timestamp.strftime('%Y-%m-%d') if self.timestamp else 'Draft'
+        machine_name = self.machine.name if self.machine else 'No Machine'
+        return f"{machine_name} - {ts}"
 
     def save(self, *args, **kwargs):
-        """Calculate void_percentage before saving."""
+        """Calculate void_percentage and ensure timezone-aware timestamp."""
+        from django.utils import timezone as tz
+        # Ensure timestamp is timezone-aware
+        if self.timestamp and tz.is_naive(self.timestamp):
+            self.timestamp = tz.make_aware(self.timestamp)
         if self.transactions > 0:
             self.void_percentage = Decimal(str((self.voids / self.transactions) * 100)).quantize(Decimal('0.01'))
         else:
