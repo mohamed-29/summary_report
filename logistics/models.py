@@ -47,12 +47,12 @@ class Machine(models.Model):
     )
     location = models.CharField(max_length=500, blank=True, help_text="Optional location description")
     latitude = models.DecimalField(
-        max_digits=12, decimal_places=6, null=True, blank=True,
-        help_text="Machine GPS latitude (e.g., 24.774265)"
+        max_digits=18, decimal_places=12, null=True, blank=True,
+        help_text="Machine GPS latitude (e.g., 24.774265123456)"
     )
     longitude = models.DecimalField(
-        max_digits=12, decimal_places=6, null=True, blank=True,
-        help_text="Machine GPS longitude (e.g., 46.738586)"
+        max_digits=18, decimal_places=12, null=True, blank=True,
+        help_text="Machine GPS longitude (e.g., 46.738586123456)"
     )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
