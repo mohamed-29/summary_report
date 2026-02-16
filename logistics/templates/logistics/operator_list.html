@@ -17,7 +17,7 @@
         <label for="month-select">Month:</label>
         <select name="month" id="month-select" onchange="this.form.submit()">
             {% for month in available_months %}
-            <option value="{{ month|date:'Y-m' }}" {% if month == selected_month %}selected{% endif %}>
+            <option value="{{ month|date:'Y-m' }}" {% if month==selected_month %}selected{% endif %}>
                 {{ month|date:"F Y" }}
             </option>
             {% empty %}
@@ -35,9 +35,12 @@
             <tr>
                 <th>Name</th>
                 <th>Type</th>
+                <th>Status</th>
+                <th>Last Activity</th>
+                <th>Time Spent</th>
                 <th>Total Visits</th>
                 <th>Machines Visited</th>
-                <th>Monthly Rating</th>
+                <th>Daily Rating</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -57,6 +60,31 @@
                     <span class="badge badge-success">Operator</span>
                     {% endif %}
                 </td>
+                <td>
+                    {% if op.status == 'checked_in' %}
+                    <span class="op-status-badge checked-in">{{ op.status_label }}</span>
+                    {% elif op.status == 'checked_out' %}
+                    <span class="op-status-badge checked-out">{{ op.status_label }}</span>
+                    {% elif op.status == 'checking_in' or op.status == 'checking_out' %}
+                    <span class="op-status-badge in-progress">{{ op.status_label }}</span>
+                    {% else %}
+                    <span class="op-status-badge no-activity">{{ op.status_label }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if op.status_time %}
+                    <span style="font-size: 0.8rem;">{{ op.status_time|date:"M d, H:i" }}</span>
+                    {% else %}
+                    <span style="color: var(--text-secondary);">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if op.time_spent %}
+                    <span style="font-weight: 600; color: var(--primary);">⏱ {{ op.time_spent }}</span>
+                    {% else %}
+                    <span style="color: var(--text-secondary);">-</span>
+                    {% endif %}
+                </td>
                 <td>{{ op.visit_count }}</td>
                 <td>{{ op.machine_count }}</td>
                 <td>
@@ -74,7 +102,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" style="text-align: center; padding: 2rem;">No operators found.</td>
+                <td colspan="9" style="text-align: center; padding: 2rem;">No operators found.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -95,6 +123,38 @@
 
     button.small:hover {
         background-color: var(--primary-hover);
+    }
+
+    .op-status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .op-status-badge.checked-in {
+        background: rgba(0, 184, 148, 0.15);
+        border: 1px solid rgba(0, 184, 148, 0.4);
+        color: #00b894;
+    }
+
+    .op-status-badge.checked-out {
+        background: rgba(108, 92, 231, 0.12);
+        border: 1px solid rgba(108, 92, 231, 0.35);
+        color: #6c5ce7;
+    }
+
+    .op-status-badge.in-progress {
+        background: rgba(253, 203, 110, 0.15);
+        border: 1px solid rgba(253, 203, 110, 0.4);
+        color: #fdcb6e;
+    }
+
+    .op-status-badge.no-activity {
+        background: var(--bg-hover);
+        color: var(--text-secondary);
     }
 </style>
 

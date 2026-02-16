@@ -56,11 +56,18 @@
 
                 <!-- Operator Visit Column -->
                 <td>
-                    {% if row.visit_log %}
-                    <strong>{{ row.visit_log.operator.name|default:"Unknown" }}</strong>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">
-                        {{ row.visit_log.timestamp|time:"H:i" }}
+                    {% if row.visit_logs %}
+                    {% for vl in row.visit_logs %}
+                    <div {% if not forloop.first
+                        %}style="margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border);" {% endif %}>
+                        <strong>{{ vl.operator.name|default:"Unknown" }}</strong>
+                        {% if vl.is_check_in %}<span class="badge badge-success" style="font-size: 0.65rem;">IN</span>{%
+                        else %}<span class="badge badge-warning" style="font-size: 0.65rem;">OUT</span>{% endif %}
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                            {{ vl.timestamp|time:"H:i" }}
+                        </div>
                     </div>
+                    {% endfor %}
                     {% else %}
                     <span style="color: var(--text-secondary);">-</span>
                     {% endif %}
@@ -72,7 +79,8 @@
                     {% for stop in row.car_stops %}
                     <div>
                         <span>🚗 {{ stop.car_log.driver.name|default:"Driver" }}</span>
-                        <span style="font-size: 0.75rem; color: var(--text-secondary);">(Stop #{{ stop.order|add:1 }})</span>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">(Stop #{{ stop.order|add:1
+                            }})</span>
                     </div>
                     {% endfor %}
                     {% else %}
@@ -151,8 +159,97 @@
                     {% endif %}
                 </td>
             </tr>
+
+            <!-- Visit Photos Row (grouped by visit log) -->
+            {% for vl in row.visit_logs %}
+            {% if vl.images.all %}
+            <tr>
+                <td colspan="6" style="padding: 12px 16px; background: var(--bg-hover);">
+                    <div class="visit-photos-group">
+                        <div class="visit-photos-header">
+                            <span class="visit-photos-label">
+                                📸 <strong>{{ vl.operator.name|default:"Unknown" }}</strong>
+                                {% if vl.is_check_in %}<span class="badge badge-success"
+                                    style="font-size: 0.65rem;">Check In</span>{% else %}<span
+                                    class="badge badge-warning" style="font-size: 0.65rem;">Check Out</span>{% endif %}
+                                &mdash; {{ vl.timestamp|date:"H:i, M d Y" }}
+                            </span>
+                            <span class="visit-photos-count">{{ vl.images.all|length }} photo{{
+                                vl.images.all|length|pluralize }}</span>
+                        </div>
+                        <div class="visit-photos-grid">
+                            {% for img in vl.images.all %}
+                            <a href="{{ img.image.url }}" target="_blank" class="visit-photo-thumb">
+                                <img src="{{ img.image.url }}" alt="Visit photo" loading="lazy">
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+
             {% endfor %}
         </tbody>
     </table>
 </div>
+
+<style>
+    .visit-photos-group {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--bg-card);
+        padding: 12px;
+    }
+
+    .visit-photos-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .visit-photos-label {
+        font-size: 0.85rem;
+        color: var(--text-primary);
+    }
+
+    .visit-photos-count {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        background: var(--bg-hover);
+        padding: 2px 8px;
+        border-radius: 6px;
+    }
+
+    .visit-photos-grid {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .visit-photo-thumb {
+        width: 100px;
+        height: 100px;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid var(--border);
+        transition: transform 0.2s, border-color 0.2s;
+        display: block;
+    }
+
+    .visit-photo-thumb:hover {
+        transform: scale(1.05);
+        border-color: var(--primary);
+    }
+
+    .visit-photo-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+</style>
 {% endblock %}

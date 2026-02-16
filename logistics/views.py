@@ -724,9 +724,63 @@ def operator_list(request):
     ratings = OperatorDailyRating.objects.filter(date=date.today()).values('operator_id', 'rating')
     rating_map = {r['operator_id']: r['rating'] for r in ratings}
 
-    # Attach ratings to operators manually
+    # Get current check-in/out status for each operator
     for op in operators:
         op.daily_rating = rating_map.get(op.id, '-')
+
+        # Find the last completed visit log
+        last_completed = VisitLog.objects.filter(
+            operator=op, is_completed=True
+        ).order_by('-created_at').first()
+
+        # Check for an active draft too
+        active_draft = VisitLog.objects.filter(
+            operator=op, is_completed=False
+        ).order_by('-created_at').first()
+
+        if active_draft:
+            # They have an incomplete form in progress
+            if active_draft.is_check_in:
+                op.status = 'checking_in'
+                op.status_label = '🔄 Checking In...'
+            else:
+                op.status = 'checking_out'
+                op.status_label = '🔄 Checking Out...'
+            op.status_time = active_draft.created_at
+            op.time_spent = None
+        elif last_completed:
+            op.status_time = last_completed.updated_at or last_completed.created_at
+            if last_completed.is_check_in:
+                # Last completed was a check-in → they're currently checked in
+                op.status = 'checked_in'
+                op.status_label = '✅ Checked In'
+                op.time_spent = None
+            else:
+                # Last completed was a check-out → calculate duration
+                op.status = 'checked_out'
+                op.status_label = '📤 Checked Out'
+                # Find the check-in that preceded this check-out
+                prev_check_in = VisitLog.objects.filter(
+                    operator=op,
+                    is_completed=True,
+                    is_check_in=True,
+                    created_at__lt=last_completed.created_at
+                ).order_by('-created_at').first()
+                if prev_check_in and prev_check_in.updated_at and last_completed.updated_at:
+                    duration = last_completed.updated_at - prev_check_in.updated_at
+                    total_minutes = int(duration.total_seconds() // 60)
+                    hours, minutes = divmod(total_minutes, 60)
+                    if hours > 0:
+                        op.time_spent = f"{hours}h {minutes}m"
+                    else:
+                        op.time_spent = f"{minutes}m"
+                else:
+                    op.time_spent = None
+        else:
+            op.status = 'no_activity'
+            op.status_label = '⚪ No Activity'
+            op.status_time = None
+            op.time_spent = None
 
     context = {
         'operators': operators,
@@ -1064,14 +1118,19 @@ def daily_machine_summary(request):
     # 2. Get All Machines
     machines = Machine.objects.filter(is_active=True).order_by('name')
 
-    # 3. Get Operator Visits for the day
+    # 3. Get Operator Visits for the day (with images prefetched)
     visit_logs = VisitLog.objects.filter(
         timestamp__year=selected_date.year,
         timestamp__month=selected_date.month,
         timestamp__day=selected_date.day
-    ).select_related('operator', 'machine')
+    ).select_related('operator', 'machine').prefetch_related('images')
 
-    visit_log_map = {log.machine_id: log for log in visit_logs}
+    # Build a map: machine_id -> list of visit logs
+    visit_log_map = {}
+    for log in visit_logs:
+        if log.machine_id not in visit_log_map:
+            visit_log_map[log.machine_id] = []
+        visit_log_map[log.machine_id].append(log)
 
     # 4. Get Car Visits (CarLogStop) for the day
     car_stops = CarLogStop.objects.filter(
@@ -1091,7 +1150,8 @@ def daily_machine_summary(request):
     issues_count = 0
 
     for machine in machines:
-        v_log = visit_log_map.get(machine.id)
+        v_logs = visit_log_map.get(machine.id, [])
+        v_log = v_logs[0] if v_logs else None  # primary log for backward compat
         c_stops = car_stop_map.get(machine.id)
 
         has_issue = False
@@ -1109,10 +1169,12 @@ def daily_machine_summary(request):
 
         if v_log:
             total_visited_operator += 1
-            if v_log.machine_issue or v_log.product_issue:
-                has_issue = True
+            for vl in v_logs:
+                if vl.machine_issue or vl.product_issue:
+                    has_issue = True
+                    break
 
-            # Parse visit location coordinates
+            # Parse visit location coordinates (from primary log)
             visit_coords = parse_coords(v_log.visit_location)
             if visit_coords:
                 visit_map_url = f"https://www.google.com/maps?q={visit_coords[0]},{visit_coords[1]}"
@@ -1150,6 +1212,7 @@ def daily_machine_summary(request):
         summary_data.append({
             'machine': machine,
             'visit_log': v_log,
+            'visit_logs': v_logs,  # all visit logs for this machine today
             'car_stops': c_stops,
             'car_issues': car_issues_text,
             'distance_display': distance_display,

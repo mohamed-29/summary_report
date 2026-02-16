@@ -1,18 +1,85 @@
 from django.contrib import admin
+from import_export import resources, fields
+from import_export.admin import ImportExportModelAdmin
+from import_export.widgets import ForeignKeyWidget
 from .models import Operator, Machine, MachineAlias, VisitLog, CarLog, MonthlyReport, CarLogImage, CarLogStop, VisitLogImage
 
 
+# ── Resources ──────────────────────────────────────────────
+
+class OperatorResource(resources.ModelResource):
+    class Meta:
+        model = Operator
+        fields = ('id', 'name', 'code', 'is_driver', 'is_active', 'created_at', 'updated_at')
+        export_order = fields
+
+
+class MachineResource(resources.ModelResource):
+    class Meta:
+        model = Machine
+        fields = ('id', 'name', 'code', 'location', 'latitude', 'longitude', 'is_active', 'created_at')
+        export_order = fields
+
+
+class VisitLogResource(resources.ModelResource):
+    operator_name = fields.Field(column_name='operator_name', attribute='operator', widget=ForeignKeyWidget(Operator, field='name'))
+    machine_name = fields.Field(column_name='machine_name', attribute='machine', widget=ForeignKeyWidget(Machine, field='name'))
+
+    class Meta:
+        model = VisitLog
+        fields = (
+            'id', 'timestamp', 'operator_name', 'machine_name',
+            'is_check_in', 'is_completed',
+            'visit_location',
+            'received_keys', 'pos_verified', 'product_review_done',
+            'no_sold_out', 'quantity_review_done', 'expiry_verified',
+            'shipment_info', 'arrival_time', 'stock_details',
+            'cleanliness_rating', 'customer_satisfaction',
+            'transactions', 'voids', 'void_percentage',
+            'product_issue', 'machine_issue', 'comments',
+            'created_at', 'updated_at',
+        )
+        export_order = fields
+
+
+class CarLogResource(resources.ModelResource):
+    driver_name = fields.Field(column_name='driver_name', attribute='driver', widget=ForeignKeyWidget(Operator, field='name'))
+
+    class Meta:
+        model = CarLog
+        fields = (
+            'id', 'trip_date', 'driver_name',
+            'received_keys', 'received_locations', 'received_shipment_full',
+            'issues', 'exit_time', 'return_time',
+            'created_at', 'updated_at',
+        )
+        export_order = fields
+
+
+class MachineAliasResource(resources.ModelResource):
+    machine_name = fields.Field(column_name='machine_name', attribute='machine', widget=ForeignKeyWidget(Machine, field='name'))
+
+    class Meta:
+        model = MachineAlias
+        fields = ('id', 'alias', 'machine_name', 'source', 'confidence_score', 'created_at')
+        export_order = fields
+
+
+# ── Admin ──────────────────────────────────────────────────
+
 @admin.register(Operator)
-class OperatorAdmin(admin.ModelAdmin):
-    list_display = ['name', 'is_driver', 'is_active', 'created_at']
+class OperatorAdmin(ImportExportModelAdmin):
+    resource_class = OperatorResource
+    list_display = ['name', 'code', 'is_driver', 'is_active', 'created_at']
     list_filter = ['is_driver', 'is_active']
     search_fields = ['name']
     ordering = ['name']
 
 
 @admin.register(Machine)
-class MachineAdmin(admin.ModelAdmin):
-    list_display = ['name', 'location', 'latitude', 'longitude', 'is_active', 'alias_count', 'created_at']
+class MachineAdmin(ImportExportModelAdmin):
+    resource_class = MachineResource
+    list_display = ['name', 'code', 'location', 'latitude', 'longitude', 'is_active', 'alias_count', 'created_at']
     list_filter = ['is_active']
     search_fields = ['name', 'location']
     list_editable = ['latitude', 'longitude']
@@ -24,7 +91,8 @@ class MachineAdmin(admin.ModelAdmin):
 
 
 @admin.register(MachineAlias)
-class MachineAliasAdmin(admin.ModelAdmin):
+class MachineAliasAdmin(ImportExportModelAdmin):
+    resource_class = MachineAliasResource
     list_display = ['alias', 'machine', 'source', 'confidence_score', 'created_at']
     list_filter = ['source', 'machine']
     search_fields = ['alias', 'machine__name']
@@ -40,7 +108,8 @@ class VisitLogImageInline(admin.TabularInline):
 
 
 @admin.register(VisitLog)
-class VisitLogAdmin(admin.ModelAdmin):
+class VisitLogAdmin(ImportExportModelAdmin):
+    resource_class = VisitLogResource
     list_display = ['timestamp', 'operator', 'machine', 'is_check_in', 'is_completed', 'transactions', 'voids', 'void_percentage']
     list_filter = ['is_check_in', 'is_completed', 'machine', 'operator', 'timestamp']
     search_fields = ['machine__name', 'operator__name', 'comments']
@@ -66,7 +135,8 @@ class CarLogStopInline(admin.TabularInline):
 
 
 @admin.register(CarLog)
-class CarLogAdmin(admin.ModelAdmin):
+class CarLogAdmin(ImportExportModelAdmin):
+    resource_class = CarLogResource
     list_display = ['trip_date', 'driver', 'stop_count', 'exit_time', 'return_time', 'has_issues', 'created_at']
     list_filter = ['driver', 'trip_date', 'received_keys', 'received_locations', 'received_shipment_full']
     search_fields = ['driver__name', 'issues']
