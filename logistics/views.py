@@ -713,20 +713,26 @@ def operator_list(request):
     month_start = selected_month
     month_end = (selected_month.replace(day=28) + timedelta(days=4)).replace(day=1)
 
-    # Get operators with stats
+    # Get operators with stats (count only check-ins as visits; check-in + check-out = 1 visit)
     operators = Operator.objects.annotate(
-        visit_count=Count('visit_logs', filter=models.Q(visit_logs__timestamp__gte=month_start, visit_logs__timestamp__lt=month_end)),
+        visit_count=Count('visit_logs', filter=models.Q(visit_logs__timestamp__gte=month_start, visit_logs__timestamp__lt=month_end, visit_logs__is_check_in=True, visit_logs__is_completed=True)),
         machine_count=Count('visit_logs__machine', distinct=True, filter=models.Q(visit_logs__timestamp__gte=month_start, visit_logs__timestamp__lt=month_end))
     ).order_by('name')
 
-    # Get ratings map
+    # Get average monthly ratings
     from .models import OperatorDailyRating
-    ratings = OperatorDailyRating.objects.filter(date=date.today()).values('operator_id', 'rating')
-    rating_map = {r['operator_id']: r['rating'] for r in ratings}
+    from django.db.models import Avg
+    ratings = (
+        OperatorDailyRating.objects
+        .filter(date__gte=month_start, date__lt=month_end)
+        .values('operator_id')
+        .annotate(avg_rating=Avg('rating'))
+    )
+    rating_map = {r['operator_id']: round(r['avg_rating'], 1) for r in ratings}
 
     # Get current check-in/out status for each operator
     for op in operators:
-        op.daily_rating = rating_map.get(op.id, '-')
+        op.monthly_avg_rating = rating_map.get(op.id, '-')
 
         # Find the last completed visit log
         last_completed = VisitLog.objects.filter(

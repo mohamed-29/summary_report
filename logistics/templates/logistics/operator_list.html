@@ -17,7 +17,7 @@
         <label for="month-select">Month:</label>
         <select name="month" id="month-select" onchange="this.form.submit()">
             {% for month in available_months %}
-            <option value="{{ month|date:'Y-m' }}" {% if month == selected_month %}selected{% endif %}>
+            <option value="{{ month|date:'Y-m' }}" {% if month==selected_month %}selected{% endif %}>
                 {{ month|date:"F Y" }}
             </option>
             {% empty %}
@@ -40,7 +40,7 @@
                 <th>Time Spent</th>
                 <th>Total Visits</th>
                 <th>Machines Visited</th>
-                <th>Daily Rating</th>
+                <th>Avg Monthly Rating</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -88,8 +88,8 @@
                 <td>{{ op.visit_count }}</td>
                 <td>{{ op.machine_count }}</td>
                 <td>
-                    {% if op.daily_rating != '-' %}
-                    <span style="font-weight: bold; color: var(--text-primary);">⭐ {{ op.daily_rating }}/10</span>
+                    {% if op.monthly_avg_rating != '-' %}
+                    <span style="font-weight: bold; color: var(--text-primary);">⭐ {{ op.monthly_avg_rating }}/10</span>
                     {% else %}
                     <span style="color: var(--text-secondary);">-</span>
                     {% endif %}
