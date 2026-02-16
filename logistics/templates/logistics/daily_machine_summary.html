@@ -58,11 +58,9 @@
                 <td>
                     {% if row.visit_logs %}
                     {% for vl in row.visit_logs %}
-                    <div {% if not forloop.first
-                        %}style="margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border);" {% endif %}>
+                    <div {% if not forloop.first %}style="margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border);" {% endif %}>
                         <strong>{{ vl.operator.name|default:"Unknown" }}</strong>
-                        {% if vl.is_check_in %}<span class="badge badge-success" style="font-size: 0.65rem;">IN</span>{%
-                        else %}<span class="badge badge-warning" style="font-size: 0.65rem;">OUT</span>{% endif %}
+                        {% if vl.is_check_in %}<span class="badge badge-success" style="font-size: 0.65rem;">IN</span>{% else %}<span class="badge badge-warning" style="font-size: 0.65rem;">OUT</span>{% endif %}
                         <div style="font-size: 0.75rem; color: var(--text-secondary);">
                             {{ vl.timestamp|time:"H:i" }}
                         </div>
@@ -79,8 +77,7 @@
                     {% for stop in row.car_stops %}
                     <div>
                         <span>🚗 {{ stop.car_log.driver.name|default:"Driver" }}</span>
-                        <span style="font-size: 0.75rem; color: var(--text-secondary);">(Stop #{{ stop.order|add:1
-                            }})</span>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">(Stop #{{ stop.order|add:1 }})</span>
                     </div>
                     {% endfor %}
                     {% else %}
