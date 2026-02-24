@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ form_type_label }} | iVend</title>
+    <title>iVend | Visit Form</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -387,27 +387,31 @@
             color: var(--error);
         }
 
-        /* Form type badge */
-        .form-type-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+        .form-type-radio {
+            display: none;
         }
 
-        .form-type-badge.check-in {
+        .form-type-radio+label {
+            flex: 1;
+            padding: 12px;
+            background: var(--bg-input);
+            border: 2px solid var(--border-input);
+            border-radius: 12px;
+            font-weight: 700;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .form-type-radio[value="True"]:checked+label {
             background: rgba(0, 184, 148, 0.15);
-            border: 1px solid rgba(0, 184, 148, 0.4);
+            border-color: rgba(0, 184, 148, 0.4);
             color: var(--success);
         }
 
-        .form-type-badge.check-out {
+        .form-type-radio[value="False"]:checked+label {
             background: rgba(253, 203, 110, 0.15);
-            border: 1px solid rgba(253, 203, 110, 0.4);
+            border-color: rgba(253, 203, 110, 0.4);
             color: var(--warning);
         }
 
@@ -573,9 +577,7 @@
                 <div class="code">{{ operator.code }}</div>
             </div>
         </div>
-        <div class="form-type-badge {% if form_type == 'check_in' %}check-in{% else %}check-out{% endif %}">
-            {% if form_type == 'check_in' %}📥 Check In{% else %}📤 Check Out{% endif %}
-        </div>
+
         <a href="{% url 'logistics:operator_logout' %}" class="logout-btn">خروج ✕</a>
     </div>
 
@@ -622,6 +624,22 @@
             {% csrf_token %}
             <input type="hidden" name="action" id="formAction" value="complete">
 
+            <!-- Section 0: Form Type Selection -->
+            <div class="section" data-section="0">
+                <div class="section-header">
+                    <div class="section-icon">🔄</div>
+                    <div class="section-title">نوع العملية</div>
+                </div>
+                <div class="form-group">
+                    <div style="display: flex; gap: 10px;">
+                        {% for radio in form.is_check_in %}
+                        {{ radio.tag }}
+                        <label for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
             <!-- Section 1: Machine Selection -->
             <div class="section" data-section="1">
                 <div class="section-header">
@@ -646,10 +664,12 @@
                     <label>{{ form.received_keys.label }}</label>
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.received_keys.html_name }}" value="نعم"
-                            id="{{ form.received_keys.auto_id }}_yes" {% if form.received_keys.value == "نعم" %}checked{% endif %}>
+                            id="{{ form.received_keys.auto_id }}_yes" {% if form.received_keys.value=="نعم" %}checked{%
+                            endif %}>
                         <label for="{{ form.received_keys.auto_id }}_yes">✓ نعم</label>
                         <input type="radio" name="{{ form.received_keys.html_name }}" value="لا"
-                            id="{{ form.received_keys.auto_id }}_no" {% if form.received_keys.value == "لا" %}checked{% endif %}>
+                            id="{{ form.received_keys.auto_id }}_no" {% if form.received_keys.value=="لا" %}checked{%
+                            endif %}>
                         <label for="{{ form.received_keys.auto_id }}_no">✕ لا</label>
                     </div>
                 </div>
@@ -659,10 +679,12 @@
                     <label>{{ form.pos_verified.label }}</label>
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.pos_verified.html_name }}" value="نعم"
-                            id="{{ form.pos_verified.auto_id }}_yes" {% if form.pos_verified.value == "نعم" %}checked{% endif %}>
+                            id="{{ form.pos_verified.auto_id }}_yes" {% if form.pos_verified.value=="نعم" %}checked{%
+                            endif %}>
                         <label for="{{ form.pos_verified.auto_id }}_yes">✓ نعم</label>
                         <input type="radio" name="{{ form.pos_verified.html_name }}" value="لا"
-                            id="{{ form.pos_verified.auto_id }}_no" {% if form.pos_verified.value == "لا" %}checked{% endif %}>
+                            id="{{ form.pos_verified.auto_id }}_no" {% if form.pos_verified.value=="لا" %}checked{%
+                            endif %}>
                         <label for="{{ form.pos_verified.auto_id }}_no">✕ لا</label>
                     </div>
                 </div>
@@ -672,10 +694,12 @@
                     <label>{{ form.product_review_done.label }}</label>
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.product_review_done.html_name }}" value="نعم"
-                            id="{{ form.product_review_done.auto_id }}_yes" {% if form.product_review_done.value == "نعم" %}checked{% endif %}>
+                            id="{{ form.product_review_done.auto_id }}_yes" {% if form.product_review_done.value=="نعم"
+                            %}checked{% endif %}>
                         <label for="{{ form.product_review_done.auto_id }}_yes">✓ نعم</label>
                         <input type="radio" name="{{ form.product_review_done.html_name }}" value="لا"
-                            id="{{ form.product_review_done.auto_id }}_no" {% if form.product_review_done.value == "لا" %}checked{% endif %}>
+                            id="{{ form.product_review_done.auto_id }}_no" {% if form.product_review_done.value=="لا"
+                            %}checked{% endif %}>
                         <label for="{{ form.product_review_done.auto_id }}_no">✕ لا</label>
                     </div>
                 </div>
@@ -685,10 +709,12 @@
                     <label>{{ form.no_sold_out.label }}</label>
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.no_sold_out.html_name }}" value="نعم"
-                            id="{{ form.no_sold_out.auto_id }}_yes" {% if form.no_sold_out.value == "نعم" %}checked{% endif %}>
+                            id="{{ form.no_sold_out.auto_id }}_yes" {% if form.no_sold_out.value=="نعم" %}checked{%
+                            endif %}>
                         <label for="{{ form.no_sold_out.auto_id }}_yes">✓ نعم</label>
                         <input type="radio" name="{{ form.no_sold_out.html_name }}" value="لا"
-                            id="{{ form.no_sold_out.auto_id }}_no" {% if form.no_sold_out.value == "لا" %}checked{% endif %}>
+                            id="{{ form.no_sold_out.auto_id }}_no" {% if form.no_sold_out.value=="لا" %}checked{% endif
+                            %}>
                         <label for="{{ form.no_sold_out.auto_id }}_no">✕ لا</label>
                     </div>
                 </div>
@@ -698,10 +724,12 @@
                     <label>{{ form.quantity_review_done.label }}</label>
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.quantity_review_done.html_name }}" value="نعم"
-                            id="{{ form.quantity_review_done.auto_id }}_yes" {% if form.quantity_review_done.value == "نعم" %}checked{% endif %}>
+                            id="{{ form.quantity_review_done.auto_id }}_yes" {% if
+                            form.quantity_review_done.value=="نعم" %}checked{% endif %}>
                         <label for="{{ form.quantity_review_done.auto_id }}_yes">✓ نعم</label>
                         <input type="radio" name="{{ form.quantity_review_done.html_name }}" value="لا"
-                            id="{{ form.quantity_review_done.auto_id }}_no" {% if form.quantity_review_done.value == "لا" %}checked{% endif %}>
+                            id="{{ form.quantity_review_done.auto_id }}_no" {% if form.quantity_review_done.value=="لا"
+                            %}checked{% endif %}>
                         <label for="{{ form.quantity_review_done.auto_id }}_no">✕ لا</label>
                     </div>
                 </div>
@@ -711,10 +739,12 @@
                     <label>{{ form.expiry_verified.label }}</label>
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.expiry_verified.html_name }}" value="نعم"
-                            id="{{ form.expiry_verified.auto_id }}_yes" {% if form.expiry_verified.value == "نعم" %}checked{% endif %}>
+                            id="{{ form.expiry_verified.auto_id }}_yes" {% if form.expiry_verified.value=="نعم"
+                            %}checked{% endif %}>
                         <label for="{{ form.expiry_verified.auto_id }}_yes">✓ نعم</label>
                         <input type="radio" name="{{ form.expiry_verified.html_name }}" value="لا"
-                            id="{{ form.expiry_verified.auto_id }}_no" {% if form.expiry_verified.value == "لا" %}checked{% endif %}>
+                            id="{{ form.expiry_verified.auto_id }}_no" {% if form.expiry_verified.value=="لا"
+                            %}checked{% endif %}>
                         <label for="{{ form.expiry_verified.auto_id }}_no">✕ لا</label>
                     </div>
                 </div>

@@ -25,6 +25,14 @@ class VisitLogForm(forms.ModelForm):
         label='اسم الماكينة'
     )
 
+    FORM_TYPE_CHOICES = [('True', '📥 Check In (تسجيل دخول)'), ('False', '📤 Check Out (تسجيل خروج)')]
+    is_check_in = forms.TypedChoiceField(
+        coerce=lambda x: x == 'True',
+        choices=FORM_TYPE_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-type-radio'}),
+        label='نوع العملية'
+    )
+
     visit_location = forms.CharField(
         required=True,
         widget=forms.TextInput(attrs={
@@ -89,6 +97,7 @@ class VisitLogForm(forms.ModelForm):
     class Meta:
         model = VisitLog
         fields = [
+            'is_check_in',
             'machine',
             'visit_location',
             'received_keys',
@@ -157,6 +166,7 @@ class VisitLogForm(forms.ModelForm):
             for field in checklist_fields:
                 val = getattr(self.instance, field)
                 self.initial[field] = 'نعم' if val else 'لا'
+            self.initial['is_check_in'] = 'True' if self.instance.is_check_in else 'False'
 
 
 class CarLogForm(forms.ModelForm):

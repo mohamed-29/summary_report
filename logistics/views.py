@@ -765,15 +765,28 @@ def operator_list(request):
                 # Last completed was a check-out → calculate duration
                 op.status = 'checked_out'
                 op.status_label = '📤 Checked Out'
-                # Find the check-in that preceded this check-out
-                prev_check_in = VisitLog.objects.filter(
+                # Find the previous check out or the start of their shift to look for the first check-in
+                prev_check_out = VisitLog.objects.filter(
+                    operator=op,
+                    is_completed=True,
+                    is_check_in=False,
+                    created_at__lt=last_completed.created_at
+                ).order_by('-created_at').first()
+
+                # Find the FIRST check-in after the previous check-out
+                qs = VisitLog.objects.filter(
                     operator=op,
                     is_completed=True,
                     is_check_in=True,
                     created_at__lt=last_completed.created_at
-                ).order_by('-created_at').first()
-                if prev_check_in and prev_check_in.updated_at and last_completed.updated_at:
-                    duration = last_completed.updated_at - prev_check_in.updated_at
+                )
+                if prev_check_out:
+                    qs = qs.filter(created_at__gt=prev_check_out.created_at)
+                
+                first_check_in = qs.order_by('created_at').first()
+
+                if first_check_in and first_check_in.updated_at and last_completed.updated_at:
+                    duration = last_completed.updated_at - first_check_in.updated_at
                     total_minutes = int(duration.total_seconds() // 60)
                     hours, minutes = divmod(total_minutes, 60)
                     if hours > 0:
@@ -881,7 +894,7 @@ def visit_log_form(request):
         if form.is_valid():
             visit = form.save(commit=False)
             visit.operator = operator
-            visit.is_check_in = is_check_in
+            # is_check_in is now bound from the form, it will be automatically set
             if not visit.timestamp:
                 visit.timestamp = timezone.now()
             visit.raw_machine_name = visit.machine.name if visit.machine else ''
@@ -909,8 +922,6 @@ def visit_log_form(request):
     return render(request, 'logistics/visit_form.html', {
         'form': form,
         'operator': operator,
-        'form_type': form_type,
-        'form_type_label': form_type_label,
         'is_draft': visit_instance is not None,
     })
 
@@ -947,7 +958,7 @@ def visit_auto_save(request):
     if form.is_valid():
         visit = form.save(commit=False)
         visit.operator = operator
-        visit.is_check_in = is_check_in
+        # The form has the is_check_in choice now
         visit.is_completed = False
         if not visit.timestamp:
             visit.timestamp = timezone.now()
