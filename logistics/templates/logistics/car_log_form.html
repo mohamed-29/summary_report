@@ -530,6 +530,14 @@
 
     <!-- Form -->
     <div class="form-container">
+
+        <!-- Important Notice -->
+        <div
+            style="background: rgba(253, 203, 110, 0.1); border: 1px solid rgba(253, 203, 110, 0.35); border-radius: 16px; padding: 14px 16px; margin-bottom: 16px; font-size: 0.82rem; line-height: 1.7; color: #fdcb6e;">
+            <div style="font-weight: 700; margin-bottom: 6px; font-size: 0.9rem;">⚠️ تنبيه هام</div>
+            لو حد عندو أي مشكله في خلال اليوم يكلم المشرف فورا و في لحظتها و في حاله عدم الرد يجب أبلاغ المشرف الأخر و
+            في حاله عدم الرد يجب الأبلاغ للمهندس المسؤول أو أي مهندس متاح و التأكد من وصول المعلومه و رفعها علي الجروب
+        </div>
         {% if messages %}
         <div class="messages">
             {% for message in messages %}
@@ -564,10 +572,12 @@
                     <label>{{ form.received_keys.label }}</label>
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.received_keys.html_name }}" value="نعم"
-                            id="{{ form.received_keys.auto_id }}_yes" {% if form.received_keys.value == "نعم" %}checked{% endif %}>
+                            id="{{ form.received_keys.auto_id }}_yes" {% if form.received_keys.value=="نعم" %}checked{%
+                            endif %}>
                         <label for="{{ form.received_keys.auto_id }}_yes">✓ نعم</label>
                         <input type="radio" name="{{ form.received_keys.html_name }}" value="لا"
-                            id="{{ form.received_keys.auto_id }}_no" {% if form.received_keys.value == "لا" %}checked{% endif %}>
+                            id="{{ form.received_keys.auto_id }}_no" {% if form.received_keys.value=="لا" %}checked{%
+                            endif %}>
                         <label for="{{ form.received_keys.auto_id }}_no">✕ لا</label>
                     </div>
                 </div>
@@ -577,10 +587,12 @@
                     <label>{{ form.received_locations.label }}</label>
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.received_locations.html_name }}" value="نعم"
-                            id="{{ form.received_locations.auto_id }}_yes" {% if form.received_locations.value == "نعم" %}checked{% endif %}>
+                            id="{{ form.received_locations.auto_id }}_yes" {% if form.received_locations.value=="نعم"
+                            %}checked{% endif %}>
                         <label for="{{ form.received_locations.auto_id }}_yes">✓ نعم</label>
                         <input type="radio" name="{{ form.received_locations.html_name }}" value="لا"
-                            id="{{ form.received_locations.auto_id }}_no" {% if form.received_locations.value == "لا" %}checked{% endif %}>
+                            id="{{ form.received_locations.auto_id }}_no" {% if form.received_locations.value=="لا"
+                            %}checked{% endif %}>
                         <label for="{{ form.received_locations.auto_id }}_no">✕ لا</label>
                     </div>
                 </div>
@@ -590,10 +602,12 @@
                     <label>{{ form.received_shipment_full.label }}</label>
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.received_shipment_full.html_name }}" value="نعم"
-                            id="{{ form.received_shipment_full.auto_id }}_yes" {% if form.received_shipment_full.value == "نعم" %}checked{% endif %}>
+                            id="{{ form.received_shipment_full.auto_id }}_yes" {% if
+                            form.received_shipment_full.value=="نعم" %}checked{% endif %}>
                         <label for="{{ form.received_shipment_full.auto_id }}_yes">✓ نعم</label>
                         <input type="radio" name="{{ form.received_shipment_full.html_name }}" value="لا"
-                            id="{{ form.received_shipment_full.auto_id }}_no" {% if form.received_shipment_full.value == "لا" %}checked{% endif %}>
+                            id="{{ form.received_shipment_full.auto_id }}_no" {% if
+                            form.received_shipment_full.value=="لا" %}checked{% endif %}>
                         <label for="{{ form.received_shipment_full.auto_id }}_no">✕ لا</label>
                     </div>
                 </div>

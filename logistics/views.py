@@ -181,12 +181,22 @@ def generate_summaries(request):
                 timestamp__lt=month_end
             )
             comments = [log.comments for log in visit_logs if log.comments and log.comments.strip() and log.comments.lower() != 'nan']
+            product_issues = [log.product_issue for log in visit_logs if log.product_issue and log.product_issue.strip() and log.product_issue.lower() != 'nan']
+            machine_issues = [log.machine_issue for log in visit_logs if log.machine_issue and log.machine_issue.strip() and log.machine_issue.lower() != 'nan']
+            cleanliness_vals = [log.cleanliness_rating for log in visit_logs if log.cleanliness_rating]
+            satisfaction_vals = [log.customer_satisfaction for log in visit_logs if log.customer_satisfaction]
+            avg_cleanliness = round(sum(cleanliness_vals) / max(1, len(cleanliness_vals)), 1) if cleanliness_vals else None
+            avg_satisfaction = round(sum(satisfaction_vals) / max(1, len(satisfaction_vals)), 1) if satisfaction_vals else None
             total_trans = sum(log.transactions for log in visit_logs)
             total_voids = sum(log.voids for log in visit_logs)
             
             machines_data.append({
                 'machine': machine,
                 'comments': comments,
+                'product_issues': product_issues,
+                'machine_issues': machine_issues,
+                'avg_cleanliness': avg_cleanliness,
+                'avg_satisfaction': avg_satisfaction,
                 'total_trans': total_trans,
                 'total_voids': total_voids
             })
@@ -198,11 +208,12 @@ def generate_summaries(request):
     for i in range(0, len(machines_data), BATCH_SIZE):
         batch = machines_data[i:i+BATCH_SIZE]
         
-        # Filter for machines that need AI analysis (have comments)
+        # Filter for machines that need AI analysis (have any text data)
         ai_batch = []
         for data in batch:
-            if not data['comments']:
-                # No comments -> No AI needed
+            has_data = data['comments'] or data['product_issues'] or data['machine_issues']
+            if not has_data:
+                # No text data -> No AI needed
                 MonthlyReport.objects.update_or_create(
                     machine=data['machine'],
                     month=selected_month,
@@ -221,19 +232,38 @@ def generate_summaries(request):
             continue
 
         # 3. Build Prompt for AI Batch
-        prompt = """Analyze the maintenance logs for these vending machines.
-For each machine, provide a single concise sentence (max 30 words) summarizing its mechanical health and any recurring issues.
-If a machine has no significant issues reported, state "No significant issues reported."
+        prompt = """You are analyzing monthly operational reports for vending machines.
+For each machine you will receive: machine issues, product dispensing issues, operator comments, average cleanliness rating (1-5), and average customer satisfaction (1-5).
+
+For each machine, write a concise summary (2-3 sentences max) covering:
+1. Any machine or mechanical problems reported
+2. Any product dispensing issues
+3. Notable observations from operator comments
+4. Cleanliness and customer satisfaction if notably low (≤2)
+If nothing significant was reported, state "No significant issues reported."
 
 Input Data:
 """
         for data in ai_batch:
-            comments_text = "; ".join(data['comments'])[:1000]  # Limit context per machine
-            prompt += f"Machine {data['machine'].id} ({data['machine'].name}): {comments_text}\n\n"
+            machine_issues_text = "; ".join(data['machine_issues'])[:500] if data['machine_issues'] else "None"
+            product_issues_text = "; ".join(data['product_issues'])[:500] if data['product_issues'] else "None"
+            comments_text = "; ".join(data['comments'])[:500] if data['comments'] else "None"
+            cleanliness_str = str(data['avg_cleanliness']) if data['avg_cleanliness'] else "N/A"
+            satisfaction_str = str(data['avg_satisfaction']) if data['avg_satisfaction'] else "N/A"
+
+            prompt += f"""Machine {data['machine'].id} ({data['machine'].name}):
+  - Machine Issues: {machine_issues_text}
+  - Product Issues: {product_issues_text}
+  - Operator Comments: {comments_text}
+  - Avg Cleanliness: {cleanliness_str}/5
+  - Avg Customer Satisfaction: {satisfaction_str}/5
+  - Transactions: {data['total_trans']}, Voids: {data['total_voids']}
+
+"""
 
         prompt += """
 Return a VALID JSON object where keys are the Machine IDs (as strings) and values are the summaries.
-Example: {"123": "Coins jammed repeatedly.", "456": "No significant issues reported."}
+Example: {"123": "Coin mechanism jammed repeatedly. Product dispensing failures reported for slots 3 and 7. Cleanliness needs attention.", "456": "No significant issues reported."}
 """
 
         # 4. Call AI
@@ -260,7 +290,7 @@ Example: {"123": "Coins jammed repeatedly.", "456": "No significant issues repor
                         'total_transactions': data['total_trans'],
                         'total_voids': data['total_voids'],
                         'ai_summary': summary,
-                        'raw_comments': "\n---\n".join(data['comments']),
+                        'raw_comments': "\n---\n".join(data['comments'] + data['product_issues'] + data['machine_issues']),
                     }
                 )
                 generated_count += 1
@@ -690,6 +720,10 @@ def operator_detail(request, operator_id):
 @login_required
 def operator_list(request):
     """List all operators with summary stats for the selected month."""
+    # Auto check-out operators who have been checked in for more than 12 hours
+    from .utils import auto_checkout_stale_visits
+    auto_checkout_stale_visits()
+
     # Get available months
     available_months_qs = (
         VisitLog.objects

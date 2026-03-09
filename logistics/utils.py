@@ -351,3 +351,52 @@ Response (JSON only):"""
                 results[name] = None
                 
     return results
+
+
+def auto_checkout_stale_visits():
+    """
+    Automatically check out operators who have been checked in for more than 12 hours.
+    
+    Finds operators whose last completed VisitLog is a check-in that is older than
+    12 hours, and creates a check-out record for them.
+    
+    Returns:
+        Number of operators that were auto-checked out.
+    """
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import Operator, VisitLog
+
+    twelve_hours_ago = timezone.now() - timedelta(hours=12)
+    checked_out_count = 0
+
+    for op in Operator.objects.filter(is_active=True, is_driver=False):
+        last_completed = VisitLog.objects.filter(
+            operator=op, is_completed=True
+        ).order_by('-created_at').first()
+
+        if not last_completed:
+            continue
+
+        # Only auto-checkout if last action was a check-in AND it's older than 12 hours
+        if last_completed.is_check_in and last_completed.created_at < twelve_hours_ago:
+            # Create auto check-out record
+            VisitLog.objects.create(
+                operator=op,
+                machine=last_completed.machine,
+                is_check_in=False,
+                is_completed=True,
+                timestamp=last_completed.timestamp + timedelta(hours=12) if last_completed.timestamp else timezone.now(),
+                comments="تم تسجيل الخروج تلقائياً (تجاوز 12 ساعة)",
+                raw_machine_name=last_completed.machine.name if last_completed.machine else '',
+                transactions=0,
+                voids=0,
+            )
+
+            # Clean up any abandoned drafts for this operator
+            VisitLog.objects.filter(operator=op, is_completed=False).delete()
+
+            checked_out_count += 1
+            logger.info(f"Auto-checked out operator '{op.name}' (checked in > 12h)")
+
+    return checked_out_count
