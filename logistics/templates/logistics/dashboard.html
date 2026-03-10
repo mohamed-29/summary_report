@@ -200,7 +200,9 @@ python manage.py ingest_logs "path/to/file.xlsx" --type onsite</pre>
     document.addEventListener('DOMContentLoaded', function () {
         const aiForm = document.getElementById('aiForm');
         if (aiForm) {
-            aiForm.addEventListener('submit', function () {
+            aiForm.addEventListener('submit', function (e) {
+                e.preventDefault(); // Prevent normal form submit
+
                 const overlay = document.getElementById('loadingOverlay');
                 overlay.style.display = 'flex';
                 const btn = document.getElementById('aiBtn');
@@ -210,12 +212,31 @@ python manage.py ingest_logs "path/to/file.xlsx" --type onsite</pre>
                 // Timer
                 let seconds = 0;
                 const timerEl = document.getElementById('loadingTimer');
-                setInterval(function () {
+                const timerInterval = setInterval(function () {
                     seconds++;
                     const m = Math.floor(seconds / 60);
                     const s = seconds % 60;
                     timerEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+                    if (seconds >= 120) {
+                        timerEl.textContent += ' — almost done...';
+                    }
                 }, 1000);
+
+                // Submit via fetch so we can handle timeout gracefully
+                const formData = new FormData(aiForm);
+                fetch(aiForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    redirect: 'follow'
+                }).then(function () {
+                    // Server responded (redirect was followed) — reload dashboard
+                    clearInterval(timerInterval);
+                    window.location.href = '/dashboard/?month=' + formData.get('month');
+                }).catch(function () {
+                    // Server timed out — summaries are still saved, just reload
+                    clearInterval(timerInterval);
+                    window.location.href = '/dashboard/?month=' + formData.get('month');
+                });
             });
         }
     });
