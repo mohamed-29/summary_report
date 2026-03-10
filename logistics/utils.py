@@ -71,7 +71,7 @@ def openrouter_generate(client, prompt):
     global _model_index
 
     models = OPENROUTER_FREE_MODELS
-    max_attempts = min(5, len(models))  # Try at most 5 models to avoid long delays
+    max_attempts = len(models)  # Try ALL models before giving up
 
     for attempt in range(max_attempts):
         model_name = models[_model_index % len(models)]
@@ -89,12 +89,12 @@ def openrouter_generate(client, prompt):
             error_str = str(e)
             if "429" in error_str:
                 logger.warning(f"Rate limited on {model_name}, trying next model...")
-                _time.sleep(1)
+                _time.sleep(0.5)
                 continue
             else:
                 logger.error(f"OpenRouter error on {model_name}: {error_str}")
-                _time.sleep(1)
-                continue  # Try next model on any error
+                _time.sleep(0.5)
+                continue
 
     raise Exception("All models failed. Please try again in a minute.")
 
