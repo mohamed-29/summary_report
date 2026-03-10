@@ -15,22 +15,39 @@ logger = logging.getLogger(__name__)
 FUZZY_MATCH_THRESHOLD = 85
 
 
-def get_gemini_model():
-    """Initialize and return a Gemini model instance."""
+# OpenRouter model to use (free tier)
+OPENROUTER_MODEL = "arcee-ai/trinity-large-preview:free"
+
+
+def get_openrouter_client():
+    """Initialize and return an OpenAI-compatible client for OpenRouter."""
     try:
-        import google.generativeai as genai
-        api_key = getattr(settings, 'GEMINI_API_KEY', '')
+        from openai import OpenAI
+        api_key = getattr(settings, 'OPENROUTER_API_KEY', '')
         if not api_key:
-            logger.warning("GEMINI_API_KEY not configured. AI fallback disabled.")
+            logger.warning("OPENROUTER_API_KEY not configured. AI fallback disabled.")
             return None
-        genai.configure(api_key=api_key)
-        return genai.GenerativeModel('gemini-3-flash-preview')
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key,
+        )
+        return client
     except ImportError:
-        logger.error("google-generativeai package not installed.")
+        logger.error("openai package not installed. Run: pip install openai")
         return None
     except Exception as e:
-        logger.error(f"Failed to initialize Gemini model: {e}")
+        logger.error(f"Failed to initialize OpenRouter client: {e}")
         return None
+
+
+def openrouter_generate(client, prompt):
+    """Send a prompt to OpenRouter and return the text response."""
+    response = client.chat.completions.create(
+        model=OPENROUTER_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+    )
+    return response.choices[0].message.content.strip()
 
 
 def resolve_machine(input_name: str, use_ai_fallback: bool = True) -> Optional[Machine]:
@@ -111,7 +128,7 @@ def resolve_machine(input_name: str, use_ai_fallback: bool = True) -> Optional[M
 
 def _ai_resolve_machine(input_name: str, valid_machines: list) -> Optional[Machine]:
     """
-    Use Gemini AI to semantically match a machine name.
+    Use OpenRouter AI to semantically match a machine name.
     
     Args:
         input_name: The raw machine name
@@ -120,8 +137,8 @@ def _ai_resolve_machine(input_name: str, valid_machines: list) -> Optional[Machi
     Returns:
         Machine object if AI finds a match, None otherwise
     """
-    model = get_gemini_model()
-    if not model:
+    client = get_openrouter_client()
+    if not client:
         return None
     
     try:
@@ -140,8 +157,7 @@ If none match or you're unsure, respond with exactly: None
 
 Response (exact match string or "None"):"""
 
-        response = model.generate_content(prompt)
-        ai_suggestion = response.text.strip()
+        ai_suggestion = openrouter_generate(client, prompt)
         
         # Validate AI response
         if ai_suggestion and ai_suggestion != "None" and ai_suggestion in valid_machines:
@@ -159,7 +175,7 @@ Response (exact match string or "None"):"""
             logger.debug(f"AI could not match: '{input_name}' (response: {ai_suggestion})")
             
     except Exception as e:
-        logger.error(f"Gemini API error: {e}")
+        logger.error(f"OpenRouter API error: {e}")
     
     return None
 
@@ -265,7 +281,7 @@ def find_best_column(columns, candidates, keywords=None):
 
 def batch_ai_resolve_machines(raw_names: list) -> dict:
     """
-    Resolve a list of raw machine names using Gemini AI in batches.
+    Resolve a list of raw machine names using OpenRouter AI in batches.
     
     Args:
         raw_names: List of unresolved raw machine names.
@@ -286,9 +302,9 @@ def batch_ai_resolve_machines(raw_names: list) -> dict:
     
     # Process in batches of 20
     BATCH_SIZE = 20
-    model = get_gemini_model()
+    client = get_openrouter_client()
     
-    if not model:
+    if not client:
         return {}
 
     for i in range(0, len(raw_names), BATCH_SIZE):
@@ -313,8 +329,7 @@ Example Output:
 Response (JSON only):"""
 
         try:
-            response = model.generate_content(prompt)
-            text = response.text.strip()
+            text = openrouter_generate(client, prompt)
             if text.startswith('```json'): # Clean code blocks
                 text = text[7:-3]
             elif text.startswith('```'):

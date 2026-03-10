@@ -31,8 +31,8 @@ CSRF_TRUSTED_ORIGINS = [
     'https://adequate-proposed-venture-volunteers.trycloudflare.com'
 ]
 
-# Gemini API Key
-GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+# OpenRouter API Key
+OPENROUTER_API_KEY = config('OPENROUTER_API_KEY', default='')
 
 
 # Application definition

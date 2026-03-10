@@ -113,7 +113,7 @@ def dashboard(request):
         'grand_totals': grand_totals,
         'selected_month': selected_month,
         'available_months': available_months,
-        'has_gemini_key': bool(getattr(settings, 'GEMINI_API_KEY', '')),
+        'has_ai_key': bool(getattr(settings, 'OPENROUTER_API_KEY', '')),
     }
     
     return render(request, 'logistics/dashboard.html', context)
@@ -142,18 +142,21 @@ def generate_summaries(request):
         messages.error(request, 'Invalid month format.')
         return redirect('logistics:dashboard')
 
-    # Check if Gemini is configured
-    api_key = getattr(settings, 'GEMINI_API_KEY', '')
+    # Check if OpenRouter is configured
+    api_key = getattr(settings, 'OPENROUTER_API_KEY', '')
     if not api_key:
-        messages.error(request, 'Gemini API key not configured.')
+        messages.error(request, 'OpenRouter API key not configured.')
         return redirect('logistics:dashboard')
 
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-3-flash-preview')
+        from openai import OpenAI
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key,
+        )
+        OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
     except Exception as e:
-        messages.error(request, f'Failed to initialize Gemini: {e}')
+        messages.error(request, f'Failed to initialize OpenRouter: {e}')
         return redirect('logistics:dashboard')
 
     # Get date range
@@ -268,8 +271,12 @@ Example: {"123": "Coin mechanism jammed repeatedly. Product dispensing failures 
 
         # 4. Call AI
         try:
-            response = model.generate_content(prompt)
-            text_response = response.text.strip()
+            response = client.chat.completions.create(
+                model=OPENROUTER_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+            )
+            text_response = response.choices[0].message.content.strip()
             # Clean markdown code blocks if present
             if text_response.startswith('```json'):
                 text_response = text_response[7:-3]

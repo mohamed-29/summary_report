@@ -20,7 +20,7 @@
     <form method="get" action="" style="display: flex; gap: 1rem; flex-wrap: wrap;">
         <select name="month" onchange="this.form.submit()">
             {% for month in available_months %}
-            <option value="{{ month.month|date:'Y-m' }}" {% if month.month == selected_month %}selected{% endif %}>
+            <option value="{{ month.month|date:'Y-m' }}" {% if month.month==selected_month %}selected{% endif %}>
                 {{ month.month|date:"F Y" }}
             </option>
             {% empty %}
@@ -31,7 +31,7 @@
         </select>
     </form>
 
-    {% if has_gemini_key and summary_data %}
+    {% if has_ai_key and summary_data %}
     <form method="post" action="{% url 'logistics:generate_summaries' %}">
         {% csrf_token %}
         <input type="hidden" name="month" value="{{ selected_month|date:'Y-m' }}">
