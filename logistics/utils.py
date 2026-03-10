@@ -20,9 +20,7 @@ OPENROUTER_FREE_MODELS = [
     "openrouter/free",
     "qwen/qwen3-next-80b-a3b-instruct:free",
     "stepfun/step-3.5-flash:free",
-    "qwen/qwen3-vl-30b-a3b-thinking:free",
     "arcee-ai/trinity-mini:free",
-    "qwen/qwen3-vl-235b-a22b-thinking:free",
     "nvidia/nemotron-nano-9b-v2:free",
     "qwen/qwen3-coder:free",
     "liquid/lfm-2.5-1.2b-thinking:free",
@@ -33,8 +31,6 @@ OPENROUTER_FREE_MODELS = [
     "mistralai/mistral-small-3.1-24b-instruct:free",
     "google/gemma-3-27b-it:free",
     "qwen/qwen3-4b:free",
-    "openai/gpt-oss-120b:free",
-    "openai/gpt-oss-20b:free",
     "meta-llama/llama-3.2-3b-instruct:free",
     "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
 ]

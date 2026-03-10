@@ -158,9 +158,13 @@ def generate_summaries(request):
         messages.error(request, f'Failed to initialize OpenRouter: {e}')
         return redirect('logistics:dashboard')
 
-    # Get date range
-    month_start = selected_month
-    month_end = (selected_month.replace(day=28) + timedelta(days=4)).replace(day=1)
+    # Get date range (timezone-aware)
+    from django.utils import timezone as tz
+    month_start = tz.make_aware(datetime.combine(selected_month, datetime.min.time()))
+    month_end = tz.make_aware(datetime.combine(
+        (selected_month.replace(day=28) + timedelta(days=4)).replace(day=1),
+        datetime.min.time()
+    ))
 
     # Get all machines with visits this month
     machines_with_visits = (
@@ -175,6 +179,7 @@ def generate_summaries(request):
 
     # 1. Gather Data
     for machine_id in machines_with_visits:
+
         try:
             machine = Machine.objects.get(id=machine_id)
             visit_logs = VisitLog.objects.filter(
@@ -206,7 +211,11 @@ def generate_summaries(request):
             continue
 
     # 2. Process each machine individually (one AI call per machine, rotating models)
+    all_models_exhausted = False
     for data in machines_data:
+        if all_models_exhausted:
+            break
+
         has_data = data['comments'] or data['product_issues'] or data['machine_issues']
 
         if not has_data:
@@ -261,21 +270,28 @@ Reply with ONLY the summary text, nothing else."""
             time.sleep(1)  # Brief pause between machines
 
         except Exception as e:
-            # Save what we can with an error note
-            MonthlyReport.objects.update_or_create(
-                machine=data['machine'],
-                month=selected_month,
-                defaults={
-                    'total_transactions': data['total_trans'],
-                    'total_voids': data['total_voids'],
-                    'ai_summary': f"Summary generation failed: {str(e)[:100]}",
-                    'raw_comments': "\n---\n".join(data['comments'] + data['product_issues'] + data['machine_issues']),
-                }
-            )
-            generated_count += 1
+            error_msg = str(e)
+            if "All models failed" in error_msg:
+                # All models are rate-limited — stop immediately
+                all_models_exhausted = True
+                messages.warning(request, f'All AI models are rate-limited. Generated {generated_count} summaries. Try again in a few minutes for the rest.')
+            else:
+                # Single model error — save error and continue
+                MonthlyReport.objects.update_or_create(
+                    machine=data['machine'],
+                    month=selected_month,
+                    defaults={
+                        'total_transactions': data['total_trans'],
+                        'total_voids': data['total_voids'],
+                        'ai_summary': f"Summary generation failed: {error_msg[:100]}",
+                        'raw_comments': "\n---\n".join(data['comments'] + data['product_issues'] + data['machine_issues']),
+                    }
+                )
+                generated_count += 1
             continue
 
-    messages.success(request, f'Generated AI summaries for {generated_count} machines.')
+    if not all_models_exhausted:
+        messages.success(request, f'Generated AI summaries for {generated_count} machines.')
     return redirect(f'/dashboard/?month={month_str}')
 
 
