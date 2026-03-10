@@ -20,7 +20,7 @@
     <form method="get" action="" style="display: flex; gap: 1rem; flex-wrap: wrap;">
         <select name="month" onchange="this.form.submit()">
             {% for month in available_months %}
-            <option value="{{ month.month|date:'Y-m' }}" {% if month.month == selected_month %}selected{% endif %}>
+            <option value="{{ month.month|date:'Y-m' }}" {% if month.month==selected_month %}selected{% endif %}>
                 {{ month.month|date:"F Y" }}
             </option>
             {% empty %}
@@ -32,10 +32,10 @@
     </form>
 
     {% if has_ai_key and summary_data %}
-    <form method="post" action="{% url 'logistics:generate_summaries' %}">
+    <form method="post" action="{% url 'logistics:generate_summaries' %}" id="aiForm">
         {% csrf_token %}
         <input type="hidden" name="month" value="{{ selected_month|date:'Y-m' }}">
-        <button type="submit" class="primary">🤖 Generate AI Summaries</button>
+        <button type="submit" class="primary" id="aiBtn">🤖 Generate AI Summaries</button>
     </form>
     {% endif %}
 
@@ -53,6 +53,46 @@
     </a>
     {% endif %}
 </div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; display:none; justify-content:center; align-items:center;">
+    <div style="text-align:center; color:white;">
+        <div style="font-size:3rem; margin-bottom:1rem; animation: pulse 1.5s ease-in-out infinite;">🤖</div>
+        <div class="spinner"
+            style="width:50px; height:50px; border:4px solid rgba(255,255,255,0.2); border-top:4px solid #6c5ce7; border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 1.5rem;">
+        </div>
+        <div style="font-size:1.2rem; font-weight:600; margin-bottom:0.5rem;">Generating AI Summaries...</div>
+        <div style="font-size:0.85rem; color:rgba(255,255,255,0.6);">This may take a few minutes. Please don't close
+            this page.</div>
+        <div id="loadingTimer" style="font-size:0.8rem; color:rgba(255,255,255,0.4); margin-top:1rem;">0:00</div>
+    </div>
+</div>
+
+<style>
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.2);
+        }
+    }
+
+    .upload-btn:hover {
+        border-color: var(--primary);
+        background: var(--bg-hover);
+    }
+</style>
 
 <!-- Upload Section -->
 <div class="upload-section" style="margin-bottom: 2rem;">
@@ -82,13 +122,6 @@
         </form>
     </div>
 </div>
-
-<style>
-    .upload-btn:hover {
-        border-color: var(--primary);
-        background: var(--bg-hover);
-    }
-</style>
 
 {% if summary_data %}
 <div class="stats-grid">
@@ -162,5 +195,30 @@
 python manage.py ingest_logs "path/to/file.xlsx" --type onsite</pre>
 </div>
 {% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const aiForm = document.getElementById('aiForm');
+        if (aiForm) {
+            aiForm.addEventListener('submit', function () {
+                const overlay = document.getElementById('loadingOverlay');
+                overlay.style.display = 'flex';
+                const btn = document.getElementById('aiBtn');
+                btn.disabled = true;
+                btn.textContent = '⏳ Generating...';
+
+                // Timer
+                let seconds = 0;
+                const timerEl = document.getElementById('loadingTimer');
+                setInterval(function () {
+                    seconds++;
+                    const m = Math.floor(seconds / 60);
+                    const s = seconds % 60;
+                    timerEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+                }, 1000);
+            });
+        }
+    });
+</script>
 
 {% endblock %}

@@ -205,102 +205,74 @@ def generate_summaries(request):
         except Machine.DoesNotExist:
             continue
 
-    # 2. Process in Batches (4 machines per batch to stay within rate limits)
-    BATCH_SIZE = 4
-    for i in range(0, len(machines_data), BATCH_SIZE):
-        batch = machines_data[i:i+BATCH_SIZE]
-        
-        # Filter for machines that need AI analysis (have any text data)
-        ai_batch = []
-        for data in batch:
-            has_data = data['comments'] or data['product_issues'] or data['machine_issues']
-            if not has_data:
-                # No text data -> No AI needed
-                MonthlyReport.objects.update_or_create(
-                    machine=data['machine'],
-                    month=selected_month,
-                    defaults={
-                        'total_transactions': data['total_trans'],
-                        'total_voids': data['total_voids'],
-                        'ai_summary': "No comments recorded this month.",
-                        'raw_comments': ""
-                    }
-                )
-                generated_count += 1
-            else:
-                ai_batch.append(data)
-        
-        if not ai_batch:
+    # 2. Process each machine individually (one AI call per machine, rotating models)
+    for data in machines_data:
+        has_data = data['comments'] or data['product_issues'] or data['machine_issues']
+
+        if not has_data:
+            # No text data -> No AI needed
+            MonthlyReport.objects.update_or_create(
+                machine=data['machine'],
+                month=selected_month,
+                defaults={
+                    'total_transactions': data['total_trans'],
+                    'total_voids': data['total_voids'],
+                    'ai_summary': "No comments recorded this month.",
+                    'raw_comments': ""
+                }
+            )
+            generated_count += 1
             continue
 
-        # 3. Build Prompt for AI Batch
-        prompt = """You are analyzing monthly operational reports for vending machines.
-For each machine you will receive: machine issues, product dispensing issues, operator comments, average cleanliness rating (1-5), and average customer satisfaction (1-5).
+        # Build prompt for this single machine
+        machine_issues_text = "; ".join(data['machine_issues'])[:500] if data['machine_issues'] else "None"
+        product_issues_text = "; ".join(data['product_issues'])[:500] if data['product_issues'] else "None"
+        comments_text = "; ".join(data['comments'])[:500] if data['comments'] else "None"
+        cleanliness_str = str(data['avg_cleanliness']) if data['avg_cleanliness'] else "N/A"
+        satisfaction_str = str(data['avg_satisfaction']) if data['avg_satisfaction'] else "N/A"
 
-For each machine, write a concise summary (2-3 sentences max) covering:
-1. Any machine or mechanical problems reported
-2. Any product dispensing issues
-3. Notable observations from operator comments
-4. Cleanliness and customer satisfaction if notably low (≤2)
-If nothing significant was reported, state "No significant issues reported."
+        prompt = f"""Summarize this vending machine's monthly report in 2-3 sentences.
+Cover: machine problems, product issues, operator comments, and low ratings (if any).
+If nothing significant, say "No significant issues reported."
 
-Input Data:
-"""
-        for data in ai_batch:
-            machine_issues_text = "; ".join(data['machine_issues'])[:500] if data['machine_issues'] else "None"
-            product_issues_text = "; ".join(data['product_issues'])[:500] if data['product_issues'] else "None"
-            comments_text = "; ".join(data['comments'])[:500] if data['comments'] else "None"
-            cleanliness_str = str(data['avg_cleanliness']) if data['avg_cleanliness'] else "N/A"
-            satisfaction_str = str(data['avg_satisfaction']) if data['avg_satisfaction'] else "N/A"
+Machine: {data['machine'].name}
+- Machine Issues: {machine_issues_text}
+- Product Issues: {product_issues_text}
+- Operator Comments: {comments_text}
+- Avg Cleanliness: {cleanliness_str}/5
+- Avg Satisfaction: {satisfaction_str}/5
+- Transactions: {data['total_trans']}, Voids: {data['total_voids']}
 
-            prompt += f"""Machine {data['machine'].id} ({data['machine'].name}):
-  - Machine Issues: {machine_issues_text}
-  - Product Issues: {product_issues_text}
-  - Operator Comments: {comments_text}
-  - Avg Cleanliness: {cleanliness_str}/5
-  - Avg Customer Satisfaction: {satisfaction_str}/5
-  - Transactions: {data['total_trans']}, Voids: {data['total_voids']}
+Reply with ONLY the summary text, nothing else."""
 
-"""
-
-        prompt += """
-Return a VALID JSON object where keys are the Machine IDs (as strings) and values are the summaries.
-Example: {"123": "Coin mechanism jammed repeatedly. Product dispensing failures reported for slots 3 and 7. Cleanliness needs attention.", "456": "No significant issues reported."}
-"""
-
-        # 4. Call AI (uses model rotation from utils)
         try:
-            text_response = openrouter_generate(client, prompt)
-            # Clean markdown code blocks if present
-            if text_response.startswith('```json'):
-                text_response = text_response[7:-3]
-            elif text_response.startswith('```'):
-                text_response = text_response[3:-3]
-                
-            results = json.loads(text_response)
-
-            # 5. Save Results
-            for data in ai_batch:
-                m_id = str(data['machine'].id)
-                summary = results.get(m_id, "Summary generation failed.")
-                
-                MonthlyReport.objects.update_or_create(
-                    machine=data['machine'],
-                    month=selected_month,
-                    defaults={
-                        'total_transactions': data['total_trans'],
-                        'total_voids': data['total_voids'],
-                        'ai_summary': summary,
-                        'raw_comments': "\n---\n".join(data['comments'] + data['product_issues'] + data['machine_issues']),
-                    }
-                )
-                generated_count += 1
-            
-            # Rate limiting pause
-            time.sleep(2)
+            summary = openrouter_generate(client, prompt)
+            MonthlyReport.objects.update_or_create(
+                machine=data['machine'],
+                month=selected_month,
+                defaults={
+                    'total_transactions': data['total_trans'],
+                    'total_voids': data['total_voids'],
+                    'ai_summary': summary,
+                    'raw_comments': "\n---\n".join(data['comments'] + data['product_issues'] + data['machine_issues']),
+                }
+            )
+            generated_count += 1
+            time.sleep(1)  # Brief pause between machines
 
         except Exception as e:
-            messages.warning(request, f"Batch failed: {e}")
+            # Save what we can with an error note
+            MonthlyReport.objects.update_or_create(
+                machine=data['machine'],
+                month=selected_month,
+                defaults={
+                    'total_transactions': data['total_trans'],
+                    'total_voids': data['total_voids'],
+                    'ai_summary': f"Summary generation failed: {str(e)[:100]}",
+                    'raw_comments': "\n---\n".join(data['comments'] + data['product_issues'] + data['machine_issues']),
+                }
+            )
+            generated_count += 1
             continue
 
     messages.success(request, f'Generated AI summaries for {generated_count} machines.')

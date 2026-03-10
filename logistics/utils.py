@@ -44,6 +44,7 @@ def get_openrouter_client():
         client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=api_key,
+            timeout=60,  # 60 second timeout per request
         )
         return client
     except ImportError:
@@ -60,9 +61,9 @@ def openrouter_generate(client, prompt):
     global _model_index
 
     models = OPENROUTER_FREE_MODELS
-    attempts = len(models)  # Try each model once
+    max_attempts = min(5, len(models))  # Try at most 5 models to avoid long delays
 
-    for attempt in range(attempts):
+    for attempt in range(max_attempts):
         model_name = models[_model_index % len(models)]
         _model_index += 1
 
@@ -78,12 +79,14 @@ def openrouter_generate(client, prompt):
             error_str = str(e)
             if "429" in error_str:
                 logger.warning(f"Rate limited on {model_name}, trying next model...")
-                _time.sleep(2)  # Brief pause before trying next model
+                _time.sleep(1)
                 continue
             else:
-                raise  # Re-raise non-rate-limit errors
+                logger.error(f"OpenRouter error on {model_name}: {error_str}")
+                _time.sleep(1)
+                continue  # Try next model on any error
 
-    raise Exception("All free models are rate-limited. Please try again in a minute.")
+    raise Exception("All models failed. Please try again in a minute.")
 
 
 def resolve_machine(input_name: str, use_ai_fallback: bool = True) -> Optional[Machine]:
