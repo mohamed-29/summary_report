@@ -149,12 +149,11 @@ def generate_summaries(request):
         return redirect('logistics:dashboard')
 
     try:
-        from openai import OpenAI
-        client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=api_key,
-        )
-        OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+        from .utils import get_openrouter_client, openrouter_generate
+        client = get_openrouter_client()
+        if not client:
+            messages.error(request, 'Failed to initialize OpenRouter client.')
+            return redirect('logistics:dashboard')
     except Exception as e:
         messages.error(request, f'Failed to initialize OpenRouter: {e}')
         return redirect('logistics:dashboard')
@@ -206,8 +205,8 @@ def generate_summaries(request):
         except Machine.DoesNotExist:
             continue
 
-    # 2. Process in Batches
-    BATCH_SIZE = 5
+    # 2. Process in Batches (4 machines per batch to stay within rate limits)
+    BATCH_SIZE = 4
     for i in range(0, len(machines_data), BATCH_SIZE):
         batch = machines_data[i:i+BATCH_SIZE]
         
@@ -269,14 +268,9 @@ Return a VALID JSON object where keys are the Machine IDs (as strings) and value
 Example: {"123": "Coin mechanism jammed repeatedly. Product dispensing failures reported for slots 3 and 7. Cleanliness needs attention.", "456": "No significant issues reported."}
 """
 
-        # 4. Call AI
+        # 4. Call AI (uses model rotation from utils)
         try:
-            response = client.chat.completions.create(
-                model=OPENROUTER_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-            )
-            text_response = response.choices[0].message.content.strip()
+            text_response = openrouter_generate(client, prompt)
             # Clean markdown code blocks if present
             if text_response.startswith('```json'):
                 text_response = text_response[7:-3]

@@ -15,8 +15,22 @@ logger = logging.getLogger(__name__)
 FUZZY_MATCH_THRESHOLD = 85
 
 
-# OpenRouter model to use (free tier)
-OPENROUTER_MODEL = "arcee-ai/trinity-large-preview:free"
+# OpenRouter free models (rotated to avoid per-model rate limits)
+OPENROUTER_FREE_MODELS = [
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "google/gemma-3-27b-it:free",
+    "mistralai/mistral-small-3.1-24b-instruct:free",
+    "qwen/qwen3-32b:free",
+    "deepseek/deepseek-r1-0528:free",
+    "microsoft/phi-4-reasoning-plus:free",
+    "nvidia/llama-3.1-nemotron-ultra-253b:free",
+    "arcee-ai/trinity-large-preview:free",
+    "google/gemini-2.5-flash-preview-05-20:free",
+    "qwen/qwen3-235b-a22b:free",
+]
+
+# Track which model index to use next (round-robin across calls)
+_model_index = 0
 
 
 def get_openrouter_client():
@@ -41,13 +55,35 @@ def get_openrouter_client():
 
 
 def openrouter_generate(client, prompt):
-    """Send a prompt to OpenRouter and return the text response."""
-    response = client.chat.completions.create(
-        model=OPENROUTER_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-    )
-    return response.choices[0].message.content.strip()
+    """Send a prompt to OpenRouter, rotating through free models on rate-limit errors."""
+    import time as _time
+    global _model_index
+
+    models = OPENROUTER_FREE_MODELS
+    attempts = len(models)  # Try each model once
+
+    for attempt in range(attempts):
+        model_name = models[_model_index % len(models)]
+        _model_index += 1
+
+        try:
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+            )
+            logger.info(f"OpenRouter success with model: {model_name}")
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            error_str = str(e)
+            if "429" in error_str:
+                logger.warning(f"Rate limited on {model_name}, trying next model...")
+                _time.sleep(2)  # Brief pause before trying next model
+                continue
+            else:
+                raise  # Re-raise non-rate-limit errors
+
+    raise Exception("All free models are rate-limited. Please try again in a minute.")
 
 
 def resolve_machine(input_name: str, use_ai_fallback: bool = True) -> Optional[Machine]:
