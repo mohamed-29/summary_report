@@ -17,16 +17,26 @@ FUZZY_MATCH_THRESHOLD = 85
 
 # OpenRouter free models (rotated to avoid per-model rate limits)
 OPENROUTER_FREE_MODELS = [
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "google/gemma-3-27b-it:free",
-    "mistralai/mistral-small-3.1-24b-instruct:free",
-    "qwen/qwen3-32b:free",
-    "deepseek/deepseek-r1-0528:free",
-    "microsoft/phi-4-reasoning-plus:free",
-    "nvidia/llama-3.1-nemotron-ultra-253b:free",
+    "openrouter/free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "stepfun/step-3.5-flash:free",
+    "qwen/qwen3-vl-30b-a3b-thinking:free",
+    "arcee-ai/trinity-mini:free",
+    "qwen/qwen3-vl-235b-a22b-thinking:free",
+    "nvidia/nemotron-nano-9b-v2:free",
+    "qwen/qwen3-coder:free",
+    "liquid/lfm-2.5-1.2b-thinking:free",
+    "liquid/lfm-2.5-1.2b-instruct:free",
+    "nvidia/nemotron-nano-12b-v2-vl:free",
     "arcee-ai/trinity-large-preview:free",
-    "google/gemini-2.5-flash-preview-05-20:free",
-    "qwen/qwen3-235b-a22b:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "mistralai/mistral-small-3.1-24b-instruct:free",
+    "google/gemma-3-27b-it:free",
+    "qwen/qwen3-4b:free",
+    "openai/gpt-oss-120b:free",
+    "openai/gpt-oss-20b:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
+    "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
 ]
 
 # Track which model index to use next (round-robin across calls)
