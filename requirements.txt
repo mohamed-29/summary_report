@@ -2,7 +2,8 @@ Django
 python-decouple
 pandas
 openpyxl
-google-generativeai
+openai
+rapidfuzz
 Pillow
 psycopg2-binary
 django-import-export

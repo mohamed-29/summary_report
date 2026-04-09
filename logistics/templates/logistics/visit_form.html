@@ -1,11 +1,11 @@
 {% load form_tags %}
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ t.lang_code }}" dir="{{ t.dir }}">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iVend | Visit Form</title>
+    <title>{{ t.visit_form_title }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -578,7 +578,10 @@
             </div>
         </div>
 
-        <a href="{% url 'logistics:operator_logout' %}" class="logout-btn">خروج ✕</a>
+        <div style="display: flex; align-items: center;">
+            <a href="{% url 'logistics:set_language' %}?lang={% if lang == 'ar' %}en{% else %}ar{% endif %}" style="color: var(--primary-light); text-decoration: none; font-size: 0.85rem; font-weight: 600; margin-left: 12px;">{% if lang == 'ar' %}EN{% else %}ع{% endif %}</a>
+            <a href="{% url 'logistics:operator_logout' %}" class="logout-btn">{{ t.logout }} ✕</a>
+        </div>
     </div>
 
     <!-- Progress -->
@@ -586,7 +589,7 @@
         <div class="progress-bar">
             <div class="progress-fill" id="progressFill"></div>
         </div>
-        <div class="progress-text" id="progressText">0 / 17 حقل مكتمل</div>
+        <div class="progress-text" id="progressText">0 / 17 {{ t.fields_complete }}</div>
     </div>
 
     <div class="form-container">
@@ -594,14 +597,13 @@
         <!-- Important Notice -->
         <div
             style="background: rgba(253, 203, 110, 0.1); border: 1px solid rgba(253, 203, 110, 0.35); border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; font-size: 0.82rem; line-height: 1.7; color: #fdcb6e;">
-            <div style="font-weight: 700; margin-bottom: 6px; font-size: 0.9rem;">⚠️ تنبيه هام</div>
-            لو حد عندو أي مشكله في خلال اليوم يكلم المشرف فورا و في لحظتها و في حاله عدم الرد يجب أبلاغ المشرف الأخر و
-            في حاله عدم الرد يجب الأبلاغ للمهندس المسؤول أو أي مهندس متاح و التأكد من وصول المعلومه و رفعها علي الجروب
+            <div style="font-weight: 700; margin-bottom: 6px; font-size: 0.9rem;">⚠️ {{ t.important_notice }}</div>
+            {{ t.important_notice_body }}
         </div>
 
         {% if is_draft %}
         <div class="draft-indicator">
-            📝 لديك مسودة محفوظة - يتم استكمال النموذج من آخر مرة
+            📝 {{ t.draft_saved_notice }}
         </div>
         {% endif %}
 
@@ -617,7 +619,7 @@
 
         {% if form.errors %}
         <div class="error-list">
-            <strong>⚠️ يرجى تصحيح الأخطاء:</strong>
+            <strong>⚠️ {{ t.please_fix_errors }}</strong>
             <ul>
                 {% for field, errors in form.errors.items %}
                 {% for error in errors %}
@@ -636,7 +638,7 @@
             <div class="section" data-section="0">
                 <div class="section-header">
                     <div class="section-icon">🔄</div>
-                    <div class="section-title">نوع العملية</div>
+                    <div class="section-title">{{ t.operation_type }}</div>
                 </div>
                 <div class="form-group">
                     <div style="display: flex; gap: 10px;">
@@ -652,7 +654,7 @@
             <div class="section" data-section="1">
                 <div class="section-header">
                     <div class="section-icon">🏭</div>
-                    <div class="section-title">اختيار الماكينة</div>
+                    <div class="section-title">{{ t.select_machine }}</div>
                 </div>
                 <div class="form-group">
                     <label><span class="req">*</span> {{ form.machine.label }}</label>
@@ -664,7 +666,7 @@
             <div class="section" data-section="2">
                 <div class="section-header">
                     <div class="section-icon">✅</div>
-                    <div class="section-title">قائمة التحقق</div>
+                    <div class="section-title">{{ t.checklist }}</div>
                 </div>
 
                 <!-- Key Received -->
@@ -673,10 +675,10 @@
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.received_keys.html_name }}" value="نعم"
                             id="{{ form.received_keys.auto_id }}_yes" {% if form.received_keys.value == "نعم" %}checked{% endif %}>
-                        <label for="{{ form.received_keys.auto_id }}_yes">✓ نعم</label>
+                        <label for="{{ form.received_keys.auto_id }}_yes">✓ {{ t.yes }}</label>
                         <input type="radio" name="{{ form.received_keys.html_name }}" value="لا"
                             id="{{ form.received_keys.auto_id }}_no" {% if form.received_keys.value == "لا" %}checked{% endif %}>
-                        <label for="{{ form.received_keys.auto_id }}_no">✕ لا</label>
+                        <label for="{{ form.received_keys.auto_id }}_no">✕ {{ t.no }}</label>
                     </div>
                 </div>
 
@@ -686,10 +688,10 @@
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.pos_verified.html_name }}" value="نعم"
                             id="{{ form.pos_verified.auto_id }}_yes" {% if form.pos_verified.value == "نعم" %}checked{% endif %}>
-                        <label for="{{ form.pos_verified.auto_id }}_yes">✓ نعم</label>
+                        <label for="{{ form.pos_verified.auto_id }}_yes">✓ {{ t.yes }}</label>
                         <input type="radio" name="{{ form.pos_verified.html_name }}" value="لا"
                             id="{{ form.pos_verified.auto_id }}_no" {% if form.pos_verified.value == "لا" %}checked{% endif %}>
-                        <label for="{{ form.pos_verified.auto_id }}_no">✕ لا</label>
+                        <label for="{{ form.pos_verified.auto_id }}_no">✕ {{ t.no }}</label>
                     </div>
                 </div>
 
@@ -699,10 +701,10 @@
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.product_review_done.html_name }}" value="نعم"
                             id="{{ form.product_review_done.auto_id }}_yes" {% if form.product_review_done.value == "نعم" %}checked{% endif %}>
-                        <label for="{{ form.product_review_done.auto_id }}_yes">✓ نعم</label>
+                        <label for="{{ form.product_review_done.auto_id }}_yes">✓ {{ t.yes }}</label>
                         <input type="radio" name="{{ form.product_review_done.html_name }}" value="لا"
                             id="{{ form.product_review_done.auto_id }}_no" {% if form.product_review_done.value == "لا" %}checked{% endif %}>
-                        <label for="{{ form.product_review_done.auto_id }}_no">✕ لا</label>
+                        <label for="{{ form.product_review_done.auto_id }}_no">✕ {{ t.no }}</label>
                     </div>
                 </div>
 
@@ -712,10 +714,10 @@
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.no_sold_out.html_name }}" value="نعم"
                             id="{{ form.no_sold_out.auto_id }}_yes" {% if form.no_sold_out.value == "نعم" %}checked{% endif %}>
-                        <label for="{{ form.no_sold_out.auto_id }}_yes">✓ نعم</label>
+                        <label for="{{ form.no_sold_out.auto_id }}_yes">✓ {{ t.yes }}</label>
                         <input type="radio" name="{{ form.no_sold_out.html_name }}" value="لا"
                             id="{{ form.no_sold_out.auto_id }}_no" {% if form.no_sold_out.value == "لا" %}checked{% endif %}>
-                        <label for="{{ form.no_sold_out.auto_id }}_no">✕ لا</label>
+                        <label for="{{ form.no_sold_out.auto_id }}_no">✕ {{ t.no }}</label>
                     </div>
                 </div>
 
@@ -725,10 +727,10 @@
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.quantity_review_done.html_name }}" value="نعم"
                             id="{{ form.quantity_review_done.auto_id }}_yes" {% if form.quantity_review_done.value == "نعم" %}checked{% endif %}>
-                        <label for="{{ form.quantity_review_done.auto_id }}_yes">✓ نعم</label>
+                        <label for="{{ form.quantity_review_done.auto_id }}_yes">✓ {{ t.yes }}</label>
                         <input type="radio" name="{{ form.quantity_review_done.html_name }}" value="لا"
                             id="{{ form.quantity_review_done.auto_id }}_no" {% if form.quantity_review_done.value == "لا" %}checked{% endif %}>
-                        <label for="{{ form.quantity_review_done.auto_id }}_no">✕ لا</label>
+                        <label for="{{ form.quantity_review_done.auto_id }}_no">✕ {{ t.no }}</label>
                     </div>
                 </div>
 
@@ -738,10 +740,10 @@
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.expiry_verified.html_name }}" value="نعم"
                             id="{{ form.expiry_verified.auto_id }}_yes" {% if form.expiry_verified.value == "نعم" %}checked{% endif %}>
-                        <label for="{{ form.expiry_verified.auto_id }}_yes">✓ نعم</label>
+                        <label for="{{ form.expiry_verified.auto_id }}_yes">✓ {{ t.yes }}</label>
                         <input type="radio" name="{{ form.expiry_verified.html_name }}" value="لا"
                             id="{{ form.expiry_verified.auto_id }}_no" {% if form.expiry_verified.value == "لا" %}checked{% endif %}>
-                        <label for="{{ form.expiry_verified.auto_id }}_no">✕ لا</label>
+                        <label for="{{ form.expiry_verified.auto_id }}_no">✕ {{ t.no }}</label>
                     </div>
                 </div>
             </div>
@@ -750,14 +752,14 @@
             <div class="section" data-section="3">
                 <div class="section-header">
                     <div class="section-icon">📍</div>
-                    <div class="section-title">الموقع والوصول</div>
+                    <div class="section-title">{{ t.location_access }}</div>
                 </div>
 
                 <div class="form-group">
                     <label>{{ form.visit_location.label }}</label>
                     <div style="display: flex; gap: 10px;">
                         {{ form.visit_location }}
-                        <button type="button" id="getLocationBtn" class="action-btn">📍 تحديد</button>
+                        <button type="button" id="getLocationBtn" class="action-btn">📍 {{ t.locate_btn }}</button>
                     </div>
                     <small id="locationStatus"
                         style="color: var(--text-secondary); display: block; margin-top: 4px;"></small>
@@ -767,7 +769,7 @@
                     <label>{{ form.arrival_time.label }}</label>
                     <div style="display: flex; gap: 10px;">
                         {{ form.arrival_time }}
-                        <button type="button" id="setNowBtn" class="action-btn">🕒 الآن</button>
+                        <button type="button" id="setNowBtn" class="action-btn">🕒 {{ t.now_btn }}</button>
                     </div>
                 </div>
 
@@ -781,7 +783,7 @@
             <div class="section" data-section="4">
                 <div class="section-header">
                     <div class="section-icon">📦</div>
-                    <div class="section-title">المخزون</div>
+                    <div class="section-title">{{ t.inventory }}</div>
                 </div>
                 <div class="form-group">
                     <label>{{ form.stock_details.label }}</label>
@@ -793,7 +795,7 @@
             <div class="section" data-section="5">
                 <div class="section-header">
                     <div class="section-icon">⭐</div>
-                    <div class="section-title">التقييمات</div>
+                    <div class="section-title">{{ t.ratings }}</div>
                 </div>
 
                 <div class="form-group">
@@ -833,13 +835,13 @@
             <div class="section" data-section="6">
                 <div class="section-header">
                     <div class="section-icon">📸</div>
-                    <div class="section-title">صور الماكينة</div>
+                    <div class="section-title">{{ t.machine_photos }}</div>
                 </div>
                 <div class="form-group">
                     <div class="photo-upload-area" id="photoUploadArea">
                         <div class="upload-icon">📷</div>
-                        <div class="upload-text">اضغط لإضافة صور أو اسحبها هنا</div>
-                        <div class="upload-hint">يمكنك رفع عدة صور</div>
+                        <div class="upload-text">{{ t.click_add_photos }}</div>
+                        <div class="upload-hint">{{ t.multi_photos }}</div>
                         <input type="file" name="machine_photos" id="photoInput" multiple accept="image/*" required>
                     </div>
                     <div class="photo-preview-grid" id="photoPreview"></div>
@@ -850,7 +852,7 @@
             <div class="section" data-section="7">
                 <div class="section-header">
                     <div class="section-icon">📊</div>
-                    <div class="section-title">المعاملات</div>
+                    <div class="section-title">{{ t.transactions_section }}</div>
                 </div>
                 <div class="form-group">
                     <label><span class="req">*</span> {{ form.transactions.label }}</label>
@@ -866,7 +868,7 @@
             <div class="section" data-section="8">
                 <div class="section-header">
                     <div class="section-icon">⚠️</div>
-                    <div class="section-title">المشاكل والملاحظات</div>
+                    <div class="section-title">{{ t.issues_notes }}</div>
                 </div>
                 <div class="form-group">
                     <label>{{ form.product_issue.label }}</label>
@@ -888,10 +890,10 @@
     <div class="submit-section">
         <div class="submit-buttons">
             <button type="button" class="draft-btn" id="draftBtn" onclick="submitDraft()">
-                💾 حفظ مسودة
+                💾 {{ t.save_draft }}
             </button>
             <button type="submit" form="visitForm" class="submit-btn" id="submitBtn">
-                {% if form_type == 'check_in' %}📥 تسجيل الدخول{% else %}📤 تسجيل الخروج{% endif %}
+                {% if form_type == 'check_in' %}📥 {{ t.check_in_submit }}{% else %}📤 {{ t.check_out_submit }}{% endif %}
             </button>
         </div>
     </div>
@@ -971,7 +973,7 @@
 
             const pct = Math.min(100, Math.round((filled / total) * 100));
             document.getElementById('progressFill').style.width = pct + '%';
-            document.getElementById('progressText').textContent = `${filled} / ${total} حقل مكتمل (${pct}%)`;
+            document.getElementById('progressText').textContent = `${filled} / ${total} {{ t.fields_complete }} (${pct}%)`;
         }
 
         // Listen for changes
@@ -988,12 +990,12 @@
             const input = document.getElementById('id_visit_location');
 
             if (!navigator.geolocation) {
-                status.textContent = '❌ المتصفح لا يدعم تحديد الموقع';
+                status.textContent = '❌ {{ t.browser_no_location }}';
                 return;
             }
 
             btn.disabled = true;
-            btn.textContent = '⏳ جاري تحديد الموقع...';
+            btn.textContent = '⏳ {{ t.locating }}';
             status.textContent = '';
 
             navigator.geolocation.getCurrentPosition(
@@ -1001,14 +1003,14 @@
                     const lat = position.coords.latitude.toFixed(6);
                     const lng = position.coords.longitude.toFixed(6);
                     input.value = `${lat}, ${lng}`;
-                    status.textContent = `✅ تم التحديد: ${lat}, ${lng}`;
-                    btn.textContent = '📍 تحديث';
+                    status.textContent = `✅ {{ t.location_found }} ${lat}, ${lng}`;
+                    btn.textContent = '📍 {{ t.location_update }}';
                     btn.disabled = false;
                     updateProgress();
                 },
                 (error) => {
-                    status.textContent = '❌ تعذر تحديد الموقع. تأكد من تفعيل GPS.';
-                    btn.textContent = '📍 إعادة المحاولة';
+                    status.textContent = '❌ {{ t.location_failed }}';
+                    btn.textContent = '📍 {{ t.location_retry }}';
                     btn.disabled = false;
                 }
             );
@@ -1034,11 +1036,11 @@
             if (action === 'complete') {
                 const btn = document.getElementById('submitBtn');
                 btn.disabled = true;
-                btn.textContent = '⏳ جاري الحفظ...';
+                btn.textContent = '⏳ {{ t.saving }}';
             } else {
                 const btn = document.getElementById('draftBtn');
                 btn.disabled = true;
-                btn.textContent = '⏳ جاري الحفظ...';
+                btn.textContent = '⏳ {{ t.saving }}';
             }
         });
 
@@ -1055,7 +1057,7 @@
             formData.delete('machine_photos');
             formData.delete('action');
 
-            statusEl.textContent = '⏳ جاري الحفظ التلقائي...';
+            statusEl.textContent = '⏳ {{ t.auto_saving }}';
             statusEl.className = 'auto-save-status saving';
 
             fetch(autoSaveUrl, {
@@ -1066,16 +1068,16 @@
                 .then(r => r.json())
                 .then(data => {
                     if (data.status === 'ok') {
-                        statusEl.textContent = '✅ تم الحفظ التلقائي';
+                        statusEl.textContent = '✅ {{ t.auto_saved }}';
                         statusEl.className = 'auto-save-status saved';
                     } else {
-                        statusEl.textContent = '⚠️ لم يتم الحفظ';
+                        statusEl.textContent = '⚠️ {{ t.auto_save_failed }}';
                         statusEl.className = 'auto-save-status error';
                     }
                     setTimeout(() => { statusEl.textContent = ''; }, 3000);
                 })
                 .catch(() => {
-                    statusEl.textContent = '❌ خطأ في الحفظ التلقائي';
+                    statusEl.textContent = '❌ {{ t.auto_save_error }}';
                     statusEl.className = 'auto-save-status error';
                     setTimeout(() => { statusEl.textContent = ''; }, 3000);
                 });

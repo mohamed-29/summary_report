@@ -1,11 +1,12 @@
 {% extends 'logistics/base.html' %}
 
-{% block title %}Logistics Dashboard - {{ selected_month|date:"F Y" }}{% endblock %}
+{% block title %}{{ t.dashboard_title }} - {{ selected_month|date:"F Y" }}{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
 
 {% block content %}
 <header>
-    <h1>📊 Logistics Dashboard</h1>
-    <p>Monthly Performance Summary for Vending Machines</p>
+    <h1>{{ t.dashboard_title }}</h1>
+    <p>{{ t.dashboard_subtitle }}</p>
 </header>
 
 {% if messages %}
@@ -35,88 +36,49 @@
     <form method="post" action="{% url 'logistics:generate_summaries' %}" id="aiForm">
         {% csrf_token %}
         <input type="hidden" name="month" value="{{ selected_month|date:'Y-m' }}">
-        <button type="submit" class="primary" id="aiBtn">🤖 Generate AI Summaries</button>
+        <button type="submit" class="primary" id="aiBtn">{{ t.generate_ai }}</button>
     </form>
-    {% endif %}
-
-    <a href="{% url 'logistics:operator_list' %}?month={{ selected_month|date:'Y-m' }}">
-        <button type="button">👥 Operators List</button>
-    </a>
-
-    <a href="{% url 'logistics:daily_machine_summary' %}?date={% now 'Y-m-d' %}">
-        <button type="button">📅 Daily Summary</button>
-    </a>
-
-    {% if user.is_superuser %}
-    <a href="{% url 'admin:index' %}">
-        <button type="button">⚙️ Admin Panel</button>
-    </a>
     {% endif %}
 </div>
 
 <!-- Loading Overlay -->
 <div id="loadingOverlay"
-    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; display:none; justify-content:center; align-items:center;">
+    style="display:none; position:fixed; inset:0; background:rgba(10,14,23,0.92); backdrop-filter:blur(8px); z-index:9999; justify-content:center; align-items:center;">
     <div style="text-align:center; color:white;">
-        <div style="font-size:3rem; margin-bottom:1rem; animation: pulse 1.5s ease-in-out infinite;">🤖</div>
         <div class="spinner"
-            style="width:50px; height:50px; border:4px solid rgba(255,255,255,0.2); border-top:4px solid #6c5ce7; border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 1.5rem;">
+            style="width:44px; height:44px; border:3px solid rgba(34,211,238,0.15); border-top:3px solid var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 1.5rem;">
         </div>
-        <div style="font-size:1.2rem; font-weight:600; margin-bottom:0.5rem;">Generating AI Summaries...</div>
-        <div style="font-size:0.85rem; color:rgba(255,255,255,0.6);">This may take a few minutes. Please don't close
-            this page.</div>
-        <div id="loadingTimer" style="font-size:0.8rem; color:rgba(255,255,255,0.4); margin-top:1rem;">0:00</div>
+        <div style="font-size:1.1rem; font-weight:700; margin-bottom:0.35rem; letter-spacing:-0.01em;">{{ t.generating_ai }}</div>
+        <div style="font-size:0.8rem; color:var(--text-muted);">{{ t.ai_wait }}</div>
+        <div id="loadingTimer" style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted); margin-top:1rem;">0:00</div>
     </div>
 </div>
 
 <style>
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    @keyframes pulse {
-
-        0%,
-        100% {
-            transform: scale(1);
-        }
-
-        50% {
-            transform: scale(1.2);
-        }
-    }
-
-    .upload-btn:hover {
-        border-color: var(--primary);
-        background: var(--bg-hover);
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 
 <!-- Upload Section -->
-<div class="upload-section" style="margin-bottom: 2rem;">
-    <h3
-        style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">
-        📤 Upload Data</h3>
-    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-        <!-- On-Site Upload -->
-        <form method="post" action="{% url 'logistics:upload_onsite' %}" enctype="multipart/form-data"
-            class="upload-form">
+<div style="margin-bottom: 1.5rem;">
+    <h3 style="margin-bottom: 0.75rem; font-family: var(--font-mono); color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600;">
+        {{ t.data_upload }}
+    </h3>
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <form method="post" action="{% url 'logistics:upload_onsite' %}" enctype="multipart/form-data">
             {% csrf_token %}
             <label class="upload-btn"
-                style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: var(--bg-card); border: 2px dashed var(--border); border-radius: 0.5rem; cursor: pointer; transition: all 0.2s;">
-                <span>🏢 On-Site Operator Logs</span>
+                style="display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.25rem; background: var(--bg-card); border: 1px dashed var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s; font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                {{ t.onsite_logs }}
                 <input type="file" name="file" accept=".xlsx,.xls" onchange="this.form.submit()" style="display: none;">
             </label>
         </form>
-
-        <!-- Car Upload -->
-        <form method="post" action="{% url 'logistics:upload_car' %}" enctype="multipart/form-data" class="upload-form">
+        <form method="post" action="{% url 'logistics:upload_car' %}" enctype="multipart/form-data">
             {% csrf_token %}
             <label class="upload-btn"
-                style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: var(--bg-card); border: 2px dashed var(--border); border-radius: 0.5rem; cursor: pointer; transition: all 0.2s;">
-                <span>🚗 Car Operator Logs</span>
+                style="display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.25rem; background: var(--bg-card); border: 1px dashed var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s; font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                {{ t.car_logs }}
                 <input type="file" name="file" accept=".xlsx,.xls" onchange="this.form.submit()" style="display: none;">
             </label>
         </form>
@@ -124,48 +86,91 @@
 </div>
 
 {% if summary_data %}
+
+<!-- KPI Stats Grid -->
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="label">Total Machines</div>
+        <div class="label">{{ t.total_machines }}</div>
         <div class="value">{{ grand_totals.machine_count }}</div>
     </div>
     <div class="stat-card success">
-        <div class="label">Total Transactions</div>
+        <div class="label">{{ t.total_transactions }}</div>
         <div class="value">{{ grand_totals.total_transactions|floatformat:0 }}</div>
     </div>
     <div class="stat-card warning">
-        <div class="label">Total Voids</div>
+        <div class="label">{{ t.total_voids }}</div>
         <div class="value">{{ grand_totals.total_voids|floatformat:0 }}</div>
     </div>
     <div
         class="stat-card {% if grand_totals.void_percentage > 5 %}danger{% elif grand_totals.void_percentage > 2 %}warning{% else %}success{% endif %}">
-        <div class="label">Overall Void %</div>
+        <div class="label">{{ t.overall_void_pct }}</div>
         <div class="value">{{ grand_totals.void_percentage }}%</div>
     </div>
 </div>
 
+<!-- Charts Row -->
+<div style="display: grid; grid-template-columns: 280px 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+    <!-- Donut Chart: Void Distribution -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem;">
+        <div style="font-family: var(--font-mono); color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; font-weight: 600;">
+            {{ t.void_ratio }}
+        </div>
+        <div style="position: relative; height: 200px;">
+            <canvas id="voidDonut"></canvas>
+        </div>
+    </div>
+    <!-- Bar Chart: Top Machines by Transactions -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem;">
+        <div style="font-family: var(--font-mono); color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; font-weight: 600;">
+            {{ t.machine_performance }}
+        </div>
+        <div style="position: relative; height: 200px;">
+            <canvas id="machineBar"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Table Search & Controls -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div style="position: relative;">
+            <input type="text" id="dashTableSearch" placeholder="{{ t.search_machines }}"
+                style="padding: 0.5rem 0.75rem 0.5rem 2rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 0.8rem; font-family: var(--font-display); width: 220px;">
+            <svg style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; opacity: 0.4;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <span id="dashTableSearchCount" style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);"></span>
+    </div>
+    <button onclick="downloadDashboardCSV()" type="button" class="btn"
+        style="background: linear-gradient(135deg, #059669, #10b981); border: none; color: white; font-size: 0.78rem;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        {{ t.export_csv }}
+    </button>
+</div>
+
 <div class="data-table">
-    <table>
+    <table id="dashTable">
         <thead>
             <tr>
-                <th>Machine Name</th>
-                <th>Visits</th>
-                <th>Transactions</th>
-                <th>Voids</th>
-                <th>Void %</th>
-                <th>AI Summary</th>
+                <th>{{ t.th_num }}</th>
+                <th>{{ t.th_machine_name }}</th>
+                <th>{{ t.th_visits }}</th>
+                <th>{{ t.th_transactions }}</th>
+                <th>{{ t.th_voids }}</th>
+                <th>{{ t.th_void_pct }}</th>
+                <th>{{ t.th_ai_summary }}</th>
             </tr>
         </thead>
         <tbody>
             {% for row in summary_data %}
             <tr>
+                <td style="font-family: var(--font-mono); color: var(--text-muted); font-size: 0.75rem;">{{ forloop.counter }}</td>
                 <td>
                     <a href="{% url 'logistics:machine_detail' row.machine_id %}?month={{ selected_month|date:'Y-m' }}">
                         {{ row.machine_name }}
                     </a>
                 </td>
                 <td>{{ row.visit_count }}</td>
-                <td>{{ row.total_transactions|floatformat:0 }}</td>
+                <td style="font-weight: 600;">{{ row.total_transactions|floatformat:0 }}</td>
                 <td>{{ row.total_voids|floatformat:0 }}</td>
                 <td>
                     <span
@@ -177,7 +182,7 @@
                     {% if row.ai_summary %}
                     {{ row.ai_summary }}
                     {% else %}
-                    <em>Not generated</em>
+                    <em>{{ t.not_generated }}</em>
                     {% endif %}
                 </td>
             </tr>
@@ -188,58 +193,184 @@
 
 {% else %}
 <div class="empty-state">
-    <h3>No Data Available</h3>
-    <p>No visit logs found for {{ selected_month|date:"F Y" }}.</p>
+    <h3>{{ t.no_data_title }}</h3>
+    <p>{{ t.no_data_msg }} {{ selected_month|date:"F Y" }}.</p>
     <p>Use the <code>ingest_logs</code> management command to import data from Excel files.</p>
     <pre style="background: var(--bg-card); padding: 1rem; border-radius: 0.5rem; margin-top: 1rem;">
 python manage.py ingest_logs "path/to/file.xlsx" --type onsite</pre>
 </div>
 {% endif %}
+{% endblock %}
 
+{% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const aiForm = document.getElementById('aiForm');
+        // === AI Form Handler ===
+        var aiForm = document.getElementById('aiForm');
         if (aiForm) {
             aiForm.addEventListener('submit', function (e) {
-                e.preventDefault(); // Prevent normal form submit
-
-                const overlay = document.getElementById('loadingOverlay');
+                e.preventDefault();
+                var overlay = document.getElementById('loadingOverlay');
                 overlay.style.display = 'flex';
-                const btn = document.getElementById('aiBtn');
+                var btn = document.getElementById('aiBtn');
                 btn.disabled = true;
-                btn.textContent = '⏳ Generating...';
-
-                // Timer
-                let seconds = 0;
-                const timerEl = document.getElementById('loadingTimer');
-                const timerInterval = setInterval(function () {
+                btn.textContent = '{{ t.generating_ai }}...';
+                var seconds = 0;
+                var timerEl = document.getElementById('loadingTimer');
+                var timerInterval = setInterval(function () {
                     seconds++;
-                    const m = Math.floor(seconds / 60);
-                    const s = seconds % 60;
+                    var m = Math.floor(seconds / 60);
+                    var s = seconds % 60;
                     timerEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
-                    if (seconds >= 120) {
-                        timerEl.textContent += ' — almost done...';
-                    }
+                    if (seconds >= 120) timerEl.textContent += ' — {{ t.almost_done }}';
                 }, 1000);
-
-                // Submit via fetch so we can handle timeout gracefully
-                const formData = new FormData(aiForm);
-                fetch(aiForm.action, {
-                    method: 'POST',
-                    body: formData,
-                    redirect: 'follow'
-                }).then(function () {
-                    // Server responded (redirect was followed) — reload dashboard
-                    clearInterval(timerInterval);
-                    window.location.href = '/dashboard/?month=' + formData.get('month');
-                }).catch(function () {
-                    // Server timed out — summaries are still saved, just reload
-                    clearInterval(timerInterval);
-                    window.location.href = '/dashboard/?month=' + formData.get('month');
-                });
+                var formData = new FormData(aiForm);
+                fetch(aiForm.action, { method: 'POST', body: formData, redirect: 'follow' })
+                    .then(function () {
+                        clearInterval(timerInterval);
+                        window.location.href = '/dashboard/?month=' + formData.get('month');
+                    }).catch(function () {
+                        clearInterval(timerInterval);
+                        window.location.href = '/dashboard/?month=' + formData.get('month');
+                    });
             });
         }
+
+        // === Table Search ===
+        if (window.initTableSearch) initTableSearch('dashTableSearch', 'dashTable');
+
+        // === Charts ===
+        {% if summary_data %}
+        var totalTrans = {{ grand_totals.total_transactions|default:"0" }};
+        var totalVoids = {{ grand_totals.total_voids|default:"0" }};
+        var goodTrans = totalTrans - totalVoids;
+
+        // Donut Chart
+        var donutCtx = document.getElementById('voidDonut');
+        if (donutCtx) {
+            new Chart(donutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['{{ t.successful }}', '{{ t.voids_label }}'],
+                    datasets: [{
+                        data: [goodTrans, totalVoids],
+                        backgroundColor: ['rgba(52,211,153,0.8)', 'rgba(248,113,113,0.8)'],
+                        borderColor: ['rgba(52,211,153,1)', 'rgba(248,113,113,1)'],
+                        borderWidth: 1,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#64748b', font: { size: 11 }, padding: 12, usePointStyle: true, pointStyleWidth: 8 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Bar Chart — top machines by transaction
+        var machineNames = [{% for row in summary_data %}"{{ row.machine_name|truncatechars:15 }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+        var machineTrans = [{% for row in summary_data %}{{ row.total_transactions|default:"0" }}{% if not forloop.last %},{% endif %}{% endfor %}];
+        var machineVoids = [{% for row in summary_data %}{{ row.total_voids|default:"0" }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+        // Sort by transactions descending and take top 10
+        var indices = machineNames.map(function(_, i) { return i; });
+        indices.sort(function(a, b) { return machineTrans[b] - machineTrans[a]; });
+        var top = indices.slice(0, 10);
+        var topNames = top.map(function(i) { return machineNames[i]; });
+        var topTrans = top.map(function(i) { return machineTrans[i]; });
+        var topVoids = top.map(function(i) { return machineVoids[i]; });
+
+        var barCtx = document.getElementById('machineBar');
+        if (barCtx) {
+            new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: topNames,
+                    datasets: [
+                        {
+                            label: '{{ t.transactions }}',
+                            data: topTrans,
+                            backgroundColor: 'rgba(34,211,238,0.6)',
+                            borderColor: 'rgba(34,211,238,1)',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        },
+                        {
+                            label: '{{ t.voids }}',
+                            data: topVoids,
+                            backgroundColor: 'rgba(248,113,113,0.6)',
+                            borderColor: 'rgba(248,113,113,1)',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: { color: '#475569', font: { size: 10 }, maxRotation: 45 },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: { color: '#475569', font: { size: 10 } },
+                            grid: { color: 'rgba(255,255,255,0.04)' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#64748b', font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8 }
+                        }
+                    }
+                }
+            });
+        }
+        {% endif %}
     });
+
+    // === CSV Export ===
+    function downloadDashboardCSV() {
+        var table = document.getElementById('dashTable');
+        if (!table) return;
+        var rows = [];
+        var headers = [];
+        table.querySelectorAll('thead th').forEach(function(th) {
+            headers.push('"' + th.textContent.trim().replace(/"/g, '""') + '"');
+        });
+        rows.push(headers.join(','));
+        table.querySelectorAll('tbody tr').forEach(function(tr) {
+            if (tr.style.display === 'none') return;
+            var row = [];
+            tr.querySelectorAll('td').forEach(function(td) {
+                row.push('"' + td.textContent.trim().replace(/\s+/g, ' ').replace(/"/g, '""') + '"');
+            });
+            rows.push(row.join(','));
+        });
+        var csvContent = '\uFEFF' + rows.join('\n');
+        var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = 'dashboard_{{ selected_month|date:"Y-m" }}.csv';
+        link.click();
+        URL.revokeObjectURL(url);
+    }
 </script>
 
+<style>
+    @media (max-width: 768px) {
+        #dashTableSearch { width: 160px !important; }
+        div[style*="grid-template-columns: 280px"] {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
 {% endblock %}

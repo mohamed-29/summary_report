@@ -1,66 +1,93 @@
 {% extends 'logistics/base.html' %}
+{% block nav_daily %}active{% endblock %}
 
 {% block content %}
 <header style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-    <div style="display: flex; align-items: center; gap: 0.75rem;">
-        <a href="{% url 'logistics:dashboard' %}"
-            style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-primary); text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: all 0.2s;"
-            onmouseover="this.style.background='var(--primary)'; this.style.color='white'; this.style.borderColor='var(--primary)'"
-            onmouseout="this.style.background='var(--bg-hover)'; this.style.color='var(--text-primary)'; this.style.borderColor='var(--border)'">
-            ← Back
-        </a>
-        <h1 style="margin: 0;">Daily Machine Summary</h1>
+    <div>
+        <h1 style="margin: 0;">{{ t.daily_machine_summary }}</h1>
+        <p style="margin-top: 0.15rem;">{{ selected_date|date:"l, M d Y" }}</p>
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <!-- Prev / Next Day -->
+        <a href="?date={{ prev_date|date:'Y-m-d' }}" class="btn" style="padding: 0.45rem 0.7rem; font-size: 0.85rem; text-decoration: none; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-card); color: var(--text-primary);">&larr;</a>
         <form method="get" style="display: flex; gap: 0.5rem; align-items: center;">
-            <label for="date" style="color: var(--text-secondary);">Date:</label>
             <input type="date" id="date" name="date" value="{{ selected_date|date:'Y-m-d' }}"
-                style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary);"
+                style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.8rem;"
                 onchange="this.form.submit()">
         </form>
-        <button onclick="downloadCSV()" type="button"
-            style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; background: linear-gradient(135deg, #00b894, #00a381); border: none; color: white; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
-            onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(0,184,148,0.4)'"
-            onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
-            📥 Download CSV
+        <a href="?date={{ next_date|date:'Y-m-d' }}" class="btn" style="padding: 0.45rem 0.7rem; font-size: 0.85rem; text-decoration: none; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-card); color: var(--text-primary);">&rarr;</a>
+        <a href="?date={% now 'Y-m-d' %}" class="btn" style="padding: 0.45rem 0.7rem; font-size: 0.78rem; text-decoration: none; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--primary-dim); color: var(--primary);">{{ t.today }}</a>
+        <button onclick="downloadCSV()" type="button" class="btn"
+            style="background: linear-gradient(135deg, #059669, #10b981); border: none; color: white;">
+            {{ t.export_csv }}
         </button>
     </div>
 </header>
 
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="label">Total Machines</div>
+        <div class="label">{{ t.total_machines }}</div>
         <div class="value">{{ total_machines }}</div>
     </div>
     <div class="stat-card success">
-        <div class="label">Visited by Operator</div>
+        <div class="label">{{ t.visited_by_operator }}</div>
         <div class="value">{{ visited_count }}</div>
     </div>
-    <div class="stat-card box-info" style="border-color: #3b82f6;">
-        <div class="label" style="color: #60a5fa;">Visited by Car</div>
+    <div class="stat-card" style="border-color: #3b82f6;">
+        <div class="label" style="color: #60a5fa;">{{ t.visited_by_car }}</div>
         <div class="value" style="color: #60a5fa;">{{ car_visited_count }}</div>
     </div>
+    <div class="stat-card" style="border-color: #a855f7;">
+        <div class="label" style="color: #c084fc;">{{ t.total_voids }}</div>
+        <div class="value" style="color: #c084fc;">{{ total_voids_today }}</div>
+    </div>
     <div class="stat-card warning">
-        <div class="label">Issues Reported</div>
+        <div class="label">{{ t.issues_reported }}</div>
         <div class="value">{{ issues_count }}</div>
+    </div>
+    <!-- Coverage % -->
+    <div class="stat-card {% if visited_count == total_machines %}success{% elif visited_count > 0 %}warning{% else %}danger{% endif %}">
+        <div class="label">{{ t.coverage }}</div>
+        <div class="value">{% widthratio visited_count total_machines 100 %}%</div>
     </div>
 </div>
 
+<!-- Search & Filter Bar -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <div style="position: relative;">
+            <input type="text" id="dailySearch" placeholder="{{ t.search_machines }}"
+                style="padding: 0.5rem 0.75rem 0.5rem 2rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 0.8rem; width: 200px;">
+            <svg style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; opacity: 0.4;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div style="display: flex; gap: 4px;" id="dailyFilterChips">
+            <button type="button" class="filter-chip active" data-filter="all">{{ t.all }}</button>
+            <button type="button" class="filter-chip" data-filter="visited">{{ t.visited }}</button>
+            <button type="button" class="filter-chip" data-filter="not-visited">{{ t.not_visited }}</button>
+            <button type="button" class="filter-chip" data-filter="issues">{{ t.issues }}</button>
+        </div>
+    </div>
+    <span id="dailySearchCount" style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);"></span>
+</div>
+
 <div class="data-table">
-    <table>
+    <table id="dailyTable">
         <thead>
             <tr>
-                <th>Machine</th>
-                <th>Operator Visit</th>
-                <th>Car Visit</th>
-                <th>Transactions</th>
-                <th>Location / Distance</th>
-                <th>Status/Issues</th>
+                <th>{{ t.th_machine }}</th>
+                <th>{{ t.th_operator_visit }}</th>
+                <th>{{ t.th_car_visit }}</th>
+                <th>{{ t.th_transactions }}</th>
+                <th>{{ t.th_voids }}</th>
+                <th>{{ t.th_location_distance }}</th>
+                <th>{{ t.th_status_issues }}</th>
             </tr>
         </thead>
         <tbody>
             {% for row in summary_data %}
-            <tr>
+            <tr class="daily-row"
+                data-visited="{% if row.visit_logs or row.car_stops %}yes{% else %}no{% endif %}"
+                data-issues="{% if row.visit_log.machine_issue or row.visit_log.product_issue or row.car_issues %}yes{% else %}no{% endif %}">
                 <td>
                     <a href="{% url 'logistics:machine_detail' row.machine.id %}">
                         {{ row.machine.name }}
@@ -75,8 +102,8 @@
                     {% if row.visit_logs %}
                     {% for vl in row.visit_logs %}
                     <div {% if not forloop.first %}style="margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border);" {% endif %}>
-                        <strong>{{ vl.operator.name|default:"Unknown" }}</strong>
-                        {% if vl.is_check_in %}<span class="badge badge-success" style="font-size: 0.65rem;">IN</span>{% else %}<span class="badge badge-warning" style="font-size: 0.65rem;">OUT</span>{% endif %}
+                        <strong>{{ vl.operator.name|default:t.unknown }}</strong>
+                        {% if vl.is_check_in %}<span class="badge badge-success" style="font-size: 0.65rem;">{{ t.in_badge }}</span>{% else %}<span class="badge badge-warning" style="font-size: 0.65rem;">{{ t.out_badge }}</span>{% endif %}
                         <div style="font-size: 0.75rem; color: var(--text-secondary);">
                             {{ vl.timestamp|time:"H:i" }}
                         </div>
@@ -92,8 +119,11 @@
                     {% if row.car_stops %}
                     {% for stop in row.car_stops %}
                     <div>
-                        <span>🚗 {{ stop.car_log.driver.name|default:"Driver" }}</span>
-                        <span style="font-size: 0.75rem; color: var(--text-secondary);">(Stop #{{ stop.order|add:1 }})</span>
+                        <span style="display: inline-flex; align-items: center; gap: 3px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2"><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2-5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>
+                            {{ stop.car_log.driver.name|default:"Driver" }}
+                        </span>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">({{ t.stop_num }} #{{ stop.order|add:1 }})</span>
                     </div>
                     {% endfor %}
                     {% else %}
@@ -104,10 +134,19 @@
                 <!-- Transactions -->
                 <td>
                     {% if row.visit_log %}
-                    {{ row.visit_log.transactions }}
+                    <span style="font-weight: 600;">{{ row.visit_log.transactions }}</span>
+                    {% else %}-{% endif %}
+                </td>
+
+                <!-- Voids -->
+                <td>
+                    {% if row.visit_log %}
+                    {% if row.visit_log.voids > 0 %}
+                    <span class="badge badge-danger">{{ row.visit_log.voids }}</span>
                     {% else %}
-                    -
+                    <span style="color: var(--text-secondary);">0</span>
                     {% endif %}
+                    {% else %}-{% endif %}
                 </td>
 
                 <!-- Location / Distance Column -->
@@ -115,39 +154,29 @@
                     {% if row.distance_display %}
                     <a href="{{ row.both_map_url }}" target="_blank"
                         style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 8px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; font-size: 0.85rem; text-decoration: none; font-weight: 600; transition: all 0.2s;">
-                        📍 {{ row.distance_display }}
+                        {{ row.distance_display }}
                     </a>
                     <div style="margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap;">
                         {% if row.machine_map_url %}
                         <a href="{{ row.machine_map_url }}" target="_blank"
-                            style="font-size: 0.7rem; color: var(--text-secondary); text-decoration: underline;">
-                            🏭 Machine
-                        </a>
+                            style="font-size: 0.7rem; color: var(--text-secondary); text-decoration: underline;">{{ t.machine_label }}</a>
                         {% endif %}
                         {% if row.visit_map_url %}
                         <a href="{{ row.visit_map_url }}" target="_blank"
-                            style="font-size: 0.7rem; color: var(--text-secondary); text-decoration: underline;">
-                            👤 Visit
-                        </a>
+                            style="font-size: 0.7rem; color: var(--text-secondary); text-decoration: underline;">{{ t.visit_label }}</a>
                         {% endif %}
                     </div>
                     {% elif row.machine_map_url %}
                     <a href="{{ row.machine_map_url }}" target="_blank"
-                        style="font-size: 0.8rem; color: #60a5fa; text-decoration: none;">
-                        📍 Machine
-                    </a>
+                        style="font-size: 0.8rem; color: #60a5fa; text-decoration: none;">{{ t.machine_label }}</a>
                     {% if row.visit_map_url %}
                     <br>
                     <a href="{{ row.visit_map_url }}" target="_blank"
-                        style="font-size: 0.8rem; color: #60a5fa; text-decoration: none;">
-                        👤 Visit
-                    </a>
+                        style="font-size: 0.8rem; color: #60a5fa; text-decoration: none;">{{ t.visit_label }}</a>
                     {% endif %}
                     {% elif row.visit_map_url %}
                     <a href="{{ row.visit_map_url }}" target="_blank"
-                        style="font-size: 0.8rem; color: #60a5fa; text-decoration: none;">
-                        👤 Visit
-                    </a>
+                        style="font-size: 0.8rem; color: #60a5fa; text-decoration: none;">{{ t.visit_label }}</a>
                     {% else %}
                     <span style="color: var(--text-secondary);">-</span>
                     {% endif %}
@@ -156,39 +185,34 @@
                 <!-- Status/Issues -->
                 <td>
                     {% if row.visit_log.machine_issue or row.visit_log.product_issue %}
-                    <span class="badge badge-danger">Op Issue</span>
+                    <span class="badge badge-danger">{{ t.op_issue }}</span>
                     <div style="font-size: 0.75rem; color: var(--danger); margin-top: 0.25rem;">
                         {{ row.visit_log.machine_issue }} {{ row.visit_log.product_issue }}
                     </div>
                     {% elif row.car_issues %}
-                    <span class="badge badge-warning">Car Issue</span>
-                    <div style="font-size: 0.75rem; color: var(--warning); margin-top: 0.25rem;">{{ row.car_issues }}
-                    </div>
+                    <span class="badge badge-warning">{{ t.car_issue }}</span>
+                    <div style="font-size: 0.75rem; color: var(--warning); margin-top: 0.25rem;">{{ row.car_issues }}</div>
                     {% elif row.visit_log or row.car_stops %}
-                    <span class="badge badge-success">Visited</span>
+                    <span class="badge badge-success">{{ t.visited }}</span>
                     {% else %}
-                    <span class="badge" style="background: var(--bg-hover); color: var(--text-secondary);">No
-                        Visit</span>
+                    <span class="badge" style="background: var(--bg-hover); color: var(--text-secondary);">{{ t.no_visit }}</span>
                     {% endif %}
                 </td>
             </tr>
 
-            <!-- Visit Photos Row (grouped by visit log) -->
+            <!-- Visit Photos Row -->
             {% for vl in row.visit_logs %}
             {% if vl.images.all %}
-            <tr>
-                <td colspan="6" style="padding: 12px 16px; background: var(--bg-hover);">
+            <tr class="photo-row">
+                <td colspan="7" style="padding: 12px 16px; background: var(--bg-hover);">
                     <div class="visit-photos-group">
                         <div class="visit-photos-header">
                             <span class="visit-photos-label">
-                                📸 <strong>{{ vl.operator.name|default:"Unknown" }}</strong>
-                                {% if vl.is_check_in %}<span class="badge badge-success"
-                                    style="font-size: 0.65rem;">Check In</span>{% else %}<span
-                                    class="badge badge-warning" style="font-size: 0.65rem;">Check Out</span>{% endif %}
+                                <strong>{{ vl.operator.name|default:t.unknown }}</strong>
+                                {% if vl.is_check_in %}<span class="badge badge-success" style="font-size: 0.65rem;">{{ t.check_in }}</span>{% else %}<span class="badge badge-warning" style="font-size: 0.65rem;">{{ t.check_out }}</span>{% endif %}
                                 &mdash; {{ vl.timestamp|date:"H:i, M d Y" }}
                             </span>
-                            <span class="visit-photos-count">{{ vl.images.all|length }} photo{{
-                                vl.images.all|length|pluralize }}</span>
+                            <span class="visit-photos-count">{{ vl.images.all|length }} {% if vl.images.all|length == 1 %}{{ t.photo }}{% else %}{{ t.photos }}{% endif %}</span>
                         </div>
                         <div class="visit-photos-grid">
                             {% for img in vl.images.all %}
@@ -209,96 +233,105 @@
 </div>
 
 <style>
-    .visit-photos-group {
+    .filter-chip {
+        padding: 0.3rem 0.75rem;
+        border-radius: 20px;
         border: 1px solid var(--border);
-        border-radius: 10px;
         background: var(--bg-card);
-        padding: 12px;
-    }
-
-    .visit-photos-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-        flex-wrap: wrap;
-        gap: 6px;
-    }
-
-    .visit-photos-label {
-        font-size: 0.85rem;
-        color: var(--text-primary);
-    }
-
-    .visit-photos-count {
-        font-size: 0.75rem;
         color: var(--text-secondary);
-        background: var(--bg-hover);
-        padding: 2px 8px;
-        border-radius: 6px;
+        font-family: var(--font-display);
+        font-size: 0.72rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
     }
-
-    .visit-photos-grid {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .visit-photo-thumb {
-        width: 100px;
-        height: 100px;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 2px solid var(--border);
-        transition: transform 0.2s, border-color 0.2s;
-        display: block;
-    }
-
-    .visit-photo-thumb:hover {
-        transform: scale(1.05);
-        border-color: var(--primary);
-    }
-
-    .visit-photo-thumb img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
+    .filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+    .filter-chip.active {
+        background: var(--primary-dim);
+        border-color: rgba(34,211,238,0.3);
+        color: var(--primary);
     }
 </style>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-    function downloadCSV() {
-        const table = document.querySelector('.data-table table');
-        if (!table) return;
+document.addEventListener('DOMContentLoaded', function() {
+    var rows = document.querySelectorAll('#dailyTable .daily-row');
+    var photoRows = document.querySelectorAll('#dailyTable .photo-row');
+    var chips = document.querySelectorAll('#dailyFilterChips .filter-chip');
+    var searchInput = document.getElementById('dailySearch');
+    var activeFilter = 'all';
 
-        const rows = [];
-        // Header
-        const headers = [];
-        table.querySelectorAll('thead th').forEach(th => {
-            headers.push('"' + th.textContent.trim().replace(/"/g, '""') + '"');
+    chips.forEach(function(chip) {
+        chip.addEventListener('click', function() {
+            chips.forEach(function(c) { c.classList.remove('active'); });
+            this.classList.add('active');
+            activeFilter = this.dataset.filter;
+            applyFilters();
         });
-        rows.push(headers.join(','));
+    });
 
-        // Data rows (skip photo rows)
-        table.querySelectorAll('tbody tr').forEach(tr => {
-            const tds = tr.querySelectorAll('td');
-            if (tds.length < 4) return; // Skip photo/expanded rows
-            const row = [];
-            tds.forEach(td => {
-                let text = td.textContent.trim().replace(/\s+/g, ' ').replace(/"/g, '""');
-                row.push('"' + text + '"');
-            });
-            rows.push(row.join(','));
+    searchInput.addEventListener('input', applyFilters);
+
+    function applyFilters() {
+        var q = searchInput.value.toLowerCase().trim();
+        var visible = 0;
+        // Hide all photo rows first
+        photoRows.forEach(function(r) { r.style.display = 'none'; });
+
+        rows.forEach(function(row) {
+            var matchText = !q || row.textContent.toLowerCase().indexOf(q) !== -1;
+            var matchFilter = true;
+            if (activeFilter === 'visited') matchFilter = row.dataset.visited === 'yes';
+            else if (activeFilter === 'not-visited') matchFilter = row.dataset.visited === 'no';
+            else if (activeFilter === 'issues') matchFilter = row.dataset.issues === 'yes';
+
+            var show = matchText && matchFilter;
+            row.style.display = show ? '' : 'none';
+            if (show) {
+                visible++;
+                // Show associated photo rows
+                var next = row.nextElementSibling;
+                while (next && next.classList.contains('photo-row')) {
+                    next.style.display = '';
+                    next = next.nextElementSibling;
+                }
+            }
         });
-
-        const csvContent = '\uFEFF' + rows.join('\n'); // BOM for Excel Arabic support
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'daily_summary_{{ selected_date|date:"Y-m-d" }}.csv';
-        link.click();
-        URL.revokeObjectURL(url);
+        var counter = document.getElementById('dailySearchCount');
+        if (counter) counter.textContent = visible + ' {{ t.of }} ' + rows.length + ' {{ t.machines_label }}';
     }
+    applyFilters();
+});
+
+function downloadCSV() {
+    var table = document.getElementById('dailyTable');
+    if (!table) return;
+    var rows = [];
+    var headers = [];
+    table.querySelectorAll('thead th').forEach(function(th) {
+        headers.push('"' + th.textContent.trim().replace(/"/g, '""') + '"');
+    });
+    rows.push(headers.join(','));
+    table.querySelectorAll('tbody tr.daily-row').forEach(function(tr) {
+        if (tr.style.display === 'none') return;
+        var row = [];
+        tr.querySelectorAll('td').forEach(function(td) {
+            var text = td.textContent.trim().replace(/\s+/g, ' ').replace(/"/g, '""');
+            row.push('"' + text + '"');
+        });
+        rows.push(row.join(','));
+    });
+    var csvContent = '\uFEFF' + rows.join('\n');
+    var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = 'daily_summary_{{ selected_date|date:"Y-m-d" }}.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+}
 </script>
 {% endblock %}

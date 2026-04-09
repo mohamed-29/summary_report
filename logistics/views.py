@@ -11,7 +11,7 @@ from django.db import models
 from django.db.models import Sum, Avg, Count, F, Q
 from django.db.models.functions import TruncMonth
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
@@ -20,6 +20,16 @@ from django.utils import timezone
 
 
 from .models import Machine, VisitLog, MonthlyReport, Operator
+
+
+def set_language(request):
+    """Toggle language between 'en' and 'ar'. Redirects back to referrer."""
+    lang = request.GET.get('lang', 'en')
+    if lang not in ('en', 'ar'):
+        lang = 'en'
+    request.session['lang'] = lang
+    referer = request.META.get('HTTP_REFERER', '/')
+    return redirect(referer)
 
 
 @login_required
@@ -108,14 +118,21 @@ def dashboard(request):
     else:
         grand_totals['void_percentage'] = 0
 
+    # Fleet-level AI summary (cached in session to avoid re-generating on refresh)
+    fleet_summary = None
+    fleet_cache_key = f'fleet_summary_{selected_month.strftime("%Y-%m")}'
+    if summary_data and bool(getattr(settings, 'OPENROUTER_API_KEY', '')):
+        fleet_summary = request.session.get(fleet_cache_key, '')
+
     context = {
         'summary_data': summary_data,
         'grand_totals': grand_totals,
         'selected_month': selected_month,
         'available_months': available_months,
         'has_ai_key': bool(getattr(settings, 'OPENROUTER_API_KEY', '')),
+        'fleet_summary': fleet_summary,
     }
-    
+
     return render(request, 'logistics/dashboard.html', context)
 
 
@@ -240,9 +257,11 @@ def generate_summaries(request):
         cleanliness_str = str(data['avg_cleanliness']) if data['avg_cleanliness'] else "N/A"
         satisfaction_str = str(data['avg_satisfaction']) if data['avg_satisfaction'] else "N/A"
 
-        prompt = f"""Summarize this vending machine's monthly report in 2-3 sentences.
-Cover: machine problems, product issues, operator comments, and low ratings (if any).
-If nothing significant, say "No significant issues reported."
+        void_pct = round((data['total_voids'] / data['total_trans'] * 100), 1) if data['total_trans'] > 0 else 0
+
+        prompt = f"""You are a vending machine operations analyst. Summarize this machine's monthly report in 2-3 sentences.
+Be specific and actionable. Flag high void rates (>3%), low ratings (<3/5), and recurring issues.
+If nothing significant, say "Operating normally. No significant issues."
 
 Machine: {data['machine'].name}
 - Machine Issues: {machine_issues_text}
@@ -250,9 +269,9 @@ Machine: {data['machine'].name}
 - Operator Comments: {comments_text}
 - Avg Cleanliness: {cleanliness_str}/5
 - Avg Satisfaction: {satisfaction_str}/5
-- Transactions: {data['total_trans']}, Voids: {data['total_voids']}
+- Transactions: {data['total_trans']}, Voids: {data['total_voids']} ({void_pct}%)
 
-Reply with ONLY the summary text, nothing else."""
+Reply with ONLY the summary text. Be concise."""
 
         try:
             summary = openrouter_generate(client, prompt)
@@ -320,12 +339,25 @@ def machine_detail(request, machine_id):
     else:
         logs = VisitLog.objects.filter(machine=machine).order_by('-timestamp')[:50]
 
+    # Aggregate stats
+    from django.db.models import Sum, Avg
+    log_list = list(logs)
+    total_trans = sum(l.transactions for l in log_list)
+    total_voids = sum(l.voids for l in log_list)
+    void_pct = round((total_voids / total_trans * 100), 2) if total_trans > 0 else 0
+    unique_ops = len(set(l.operator_id for l in log_list if l.operator_id))
+
     context = {
         'machine': machine,
-        'logs': logs,
+        'logs': log_list,
         'aliases': machine.aliases.all(),
+        'total_visits': len(log_list),
+        'total_transactions': total_trans,
+        'total_voids': total_voids,
+        'void_percentage': void_pct,
+        'unique_operators': unique_ops,
     }
-    
+
     return render(request, 'logistics/machine_detail.html', context)
 
 
@@ -677,6 +709,15 @@ def operator_detail(request, operator_id):
             messages.error(request, 'Invalid rating value.')
         return redirect(f'{request.path}?month={selected_month.strftime("%Y-%m")}')
 
+    # Check for specific date filter
+    filter_date = None
+    filter_date_str = request.GET.get('filter_date')
+    if filter_date_str:
+        try:
+            filter_date = datetime.strptime(filter_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            filter_date = None
+
     # Get stats for the month
     month_visits = VisitLog.objects.filter(
         operator=operator,
@@ -686,7 +727,50 @@ def operator_detail(request, operator_id):
 
     total_visits = month_visits.count()
     unique_machines = month_visits.values('machine').distinct().count()
-    
+
+    # If date filter is applied, narrow down the logs
+    if filter_date:
+        filtered_visits = month_visits.filter(
+            timestamp__year=filter_date.year,
+            timestamp__month=filter_date.month,
+            timestamp__day=filter_date.day
+        )
+    else:
+        filtered_visits = month_visits
+
+    # Aggregate ratings and comments for the displayed logs
+    month_comments = []
+    cleanliness_vals = []
+    satisfaction_vals = []
+    for vl in filtered_visits.select_related('machine'):
+        if vl.comments and vl.comments.strip():
+            month_comments.append({
+                'date': vl.timestamp,
+                'machine': vl.machine.name if vl.machine else 'Unknown',
+                'text': vl.comments.strip(),
+                'cleanliness': vl.cleanliness_rating,
+                'satisfaction': vl.customer_satisfaction,
+                'product_issue': vl.product_issue,
+                'machine_issue': vl.machine_issue,
+            })
+        if vl.cleanliness_rating:
+            cleanliness_vals.append(vl.cleanliness_rating)
+        if vl.customer_satisfaction:
+            satisfaction_vals.append(vl.customer_satisfaction)
+
+    avg_cleanliness = round(sum(cleanliness_vals) / len(cleanliness_vals), 1) if cleanliness_vals else None
+    avg_satisfaction = round(sum(satisfaction_vals) / len(satisfaction_vals), 1) if satisfaction_vals else None
+
+    # Get car logs for drivers
+    from .models import CarLog, CarLogStop
+    car_logs = []
+    if operator.is_driver:
+        car_logs = CarLog.objects.filter(
+            driver=operator,
+            trip_date__gte=month_start,
+            trip_date__lt=month_end
+        ).prefetch_related('stops__machine').order_by('-trip_date')
+
     # Get current rating
     try:
         from .models import OperatorDailyRating
@@ -701,9 +785,114 @@ def operator_detail(request, operator_id):
         'total_visits': total_visits,
         'unique_machines': unique_machines,
         'current_rating': current_rating,
-        'logs': month_visits.select_related('machine').order_by('-timestamp')[:100],  # Show recent 100 logs
+        'logs': filtered_visits.select_related('machine').order_by('-timestamp')[:100],
+        'filter_date': filter_date,
+        'month_comments': month_comments,
+        'avg_cleanliness': avg_cleanliness,
+        'avg_satisfaction': avg_satisfaction,
+        'car_logs': car_logs,
     }
     return render(request, 'logistics/operator_detail.html', context)
+
+
+@login_required
+def download_visit_log(request, log_id):
+    """Download a single visit log record as CSV. Use ?lang=ar for Arabic."""
+    try:
+        log = VisitLog.objects.select_related('operator', 'machine').get(id=log_id)
+    except VisitLog.DoesNotExist:
+        messages.error(request, 'Visit log not found.')
+        return redirect('logistics:dashboard')
+
+    lang = request.GET.get('lang', 'en')
+    is_ar = lang == 'ar'
+
+    operator_name = log.operator.name if log.operator else ('غير معروف' if is_ar else 'Unknown')
+    machine_name = log.machine.name if log.machine else ('غير معروف' if is_ar else 'Unknown')
+    ts = log.timestamp.strftime('%Y-%m-%d_%H-%M') if log.timestamp else 'no-date'
+
+    yes = 'نعم' if is_ar else 'Yes'
+    no = 'لا' if is_ar else 'No'
+    na = '-'
+
+    def clean(text):
+        if not text:
+            return na
+        return text.replace(chr(10), ' ').replace(chr(13), '').replace('"', "'")
+
+    def bool_val(val):
+        return yes if val else no
+
+    # Build rows as (label, value) tuples
+    if is_ar:
+        header = 'الحقل,القيمة'
+        rows = [
+            ('رقم السجل', log.id),
+            ('التاريخ', log.timestamp.strftime('%Y-%m-%d %H:%M') if log.timestamp else na),
+            ('المشغل', operator_name),
+            ('الماكينة', machine_name),
+            ('اسم الماكينة الأصلي', clean(log.raw_machine_name)),
+            ('نوع النموذج', 'تسجيل دخول' if log.is_check_in else 'تسجيل خروج'),
+            ('الحالة', 'مكتمل' if log.is_completed else 'مسودة'),
+            ('موقع الماكينة', clean(log.visit_location)),
+            ('توقيت الوصول', log.arrival_time.strftime('%Y-%m-%d %H:%M') if log.arrival_time else na),
+            ('عدد المعاملات', log.transactions),
+            ('عدد الملغية', log.voids),
+            ('نسبة الإلغاء', f'{log.void_percentage}%'),
+            ('هل استلمت مفاتيح الماكينه ؟', bool_val(log.received_keys)),
+            ('هل تأكدت من أن ال POS يعمل ؟', bool_val(log.pos_verified)),
+            ('هل أتممت مراجعه الأسم و السعر و الصوره للمنتج ؟', bool_val(log.product_review_done)),
+            ('هل تأكدت من عدم وجود Sold out أو stop sale ؟', bool_val(log.no_sold_out)),
+            ('هل أتممت مراجعه الكميات قبل و بعد وضعها في الماكينه ؟', bool_val(log.quantity_review_done)),
+            ('هل تأكدت من تاريخ صلاحية المنتجات ؟', bool_val(log.expiry_verified)),
+            ('تقييم النظافة', f'{log.cleanliness_rating}/5'),
+            ('رضا العملاء', f'{log.customer_satisfaction}/5'),
+            ('معلومات الشحنة', clean(log.shipment_info)),
+            ('الستوك المتواجد', clean(log.stock_details)),
+            ('مشاكل المنتجات', clean(log.product_issue)),
+            ('مشاكل الماكينة', clean(log.machine_issue)),
+            ('ملاحظات', clean(log.comments)),
+        ]
+    else:
+        header = 'Field,Value'
+        rows = [
+            ('Log ID', log.id),
+            ('Date', log.timestamp.strftime('%Y-%m-%d %H:%M') if log.timestamp else na),
+            ('Operator', operator_name),
+            ('Machine', machine_name),
+            ('Raw Machine Name', clean(log.raw_machine_name)),
+            ('Form Type', 'Check In' if log.is_check_in else 'Check Out'),
+            ('Status', 'Completed' if log.is_completed else 'Draft'),
+            ('Visit Location', clean(log.visit_location)),
+            ('Arrival Time', log.arrival_time.strftime('%Y-%m-%d %H:%M') if log.arrival_time else na),
+            ('Transactions', log.transactions),
+            ('Voids', log.voids),
+            ('Void %', f'{log.void_percentage}%'),
+            ('Received Keys', bool_val(log.received_keys)),
+            ('POS Verified', bool_val(log.pos_verified)),
+            ('Product Review Done', bool_val(log.product_review_done)),
+            ('No Sold Out', bool_val(log.no_sold_out)),
+            ('Quantity Review Done', bool_val(log.quantity_review_done)),
+            ('Expiry Verified', bool_val(log.expiry_verified)),
+            ('Cleanliness Rating', f'{log.cleanliness_rating}/5'),
+            ('Customer Satisfaction', f'{log.customer_satisfaction}/5'),
+            ('Shipment Info', clean(log.shipment_info)),
+            ('Stock Details', clean(log.stock_details)),
+            ('Product Issues', clean(log.product_issue)),
+            ('Machine Issues', clean(log.machine_issue)),
+            ('Comments', clean(log.comments)),
+        ]
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="visit_log_{log.id}_{ts}.csv"'
+    response.write('\ufeff')  # BOM for Excel Arabic support
+
+    lines = [header]
+    for label, value in rows:
+        lines.append(f'"{label}","{value}"')
+
+    response.write('\n'.join(lines))
+    return response
 
 
 @login_required
@@ -737,10 +926,25 @@ def operator_list(request):
     month_end = (selected_month.replace(day=28) + timedelta(days=4)).replace(day=1)
 
     # Get operators with stats (count only check-ins as visits; check-in + check-out = 1 visit)
+    from .models import CarLog, CarLogStop
     operators = Operator.objects.annotate(
         visit_count=Count('visit_logs', filter=models.Q(visit_logs__timestamp__gte=month_start, visit_logs__timestamp__lt=month_end, visit_logs__is_check_in=True, visit_logs__is_completed=True)),
-        machine_count=Count('visit_logs__machine', distinct=True, filter=models.Q(visit_logs__timestamp__gte=month_start, visit_logs__timestamp__lt=month_end))
+        machine_count=Count('visit_logs__machine', distinct=True, filter=models.Q(visit_logs__timestamp__gte=month_start, visit_logs__timestamp__lt=month_end)),
+        car_trip_count=Count('car_logs', filter=models.Q(car_logs__trip_date__gte=month_start, car_logs__trip_date__lt=month_end)),
     ).order_by('name')
+
+    # Build car stops map: driver_id -> set of machine names visited
+    car_machine_map = {}
+    car_stops_qs = CarLogStop.objects.filter(
+        car_log__trip_date__gte=month_start,
+        car_log__trip_date__lt=month_end
+    ).select_related('car_log__driver', 'machine')
+    for stop in car_stops_qs:
+        driver_id = stop.car_log.driver_id
+        if driver_id:
+            if driver_id not in car_machine_map:
+                car_machine_map[driver_id] = set()
+            car_machine_map[driver_id].add(stop.machine.name)
 
     # Get average monthly ratings
     from .models import OperatorDailyRating
@@ -753,9 +957,51 @@ def operator_list(request):
     )
     rating_map = {r['operator_id']: round(r['avg_rating'], 1) for r in ratings}
 
+    # Get today's comments and ratings per operator
+    today = date.today()
+    todays_visit_logs = VisitLog.objects.filter(
+        timestamp__year=today.year,
+        timestamp__month=today.month,
+        timestamp__day=today.day,
+        is_completed=True
+    ).select_related('operator', 'machine')
+
+    # Build maps for today's data
+    operator_today_comments = {}
+    operator_today_ratings = {}
+    for vl in todays_visit_logs:
+        if vl.operator_id:
+            if vl.operator_id not in operator_today_comments:
+                operator_today_comments[vl.operator_id] = []
+                operator_today_ratings[vl.operator_id] = {'cleanliness': [], 'satisfaction': []}
+            if vl.comments and vl.comments.strip():
+                operator_today_comments[vl.operator_id].append({
+                    'machine': vl.machine.name if vl.machine else 'Unknown',
+                    'text': vl.comments.strip(),
+                })
+            if vl.cleanliness_rating:
+                operator_today_ratings[vl.operator_id]['cleanliness'].append(vl.cleanliness_rating)
+            if vl.customer_satisfaction:
+                operator_today_ratings[vl.operator_id]['satisfaction'].append(vl.customer_satisfaction)
+
     # Get current check-in/out status for each operator
     for op in operators:
         op.monthly_avg_rating = rating_map.get(op.id, '-')
+        op.last_route = []
+
+        # Today's comments and ratings
+        op.today_comments = operator_today_comments.get(op.id, [])
+        ratings_data = operator_today_ratings.get(op.id, {'cleanliness': [], 'satisfaction': []})
+        op.avg_cleanliness = round(sum(ratings_data['cleanliness']) / len(ratings_data['cleanliness']), 1) if ratings_data['cleanliness'] else None
+        op.avg_satisfaction = round(sum(ratings_data['satisfaction']) / len(ratings_data['satisfaction']), 1) if ratings_data['satisfaction'] else None
+
+        # For drivers: use car trip data if no visit logs
+        op.car_machines = car_machine_map.get(op.id, set())
+        if op.is_driver:
+            if op.visit_count == 0:
+                op.visit_count = op.car_trip_count
+            if op.machine_count == 0:
+                op.machine_count = len(op.car_machines)
 
         # Find the last completed visit log
         last_completed = VisitLog.objects.filter(
@@ -766,6 +1012,32 @@ def operator_list(request):
         active_draft = VisitLog.objects.filter(
             operator=op, is_completed=False
         ).order_by('-created_at').first()
+
+        # For drivers: check last car log activity if no visit logs
+        if op.is_driver and not last_completed and not active_draft:
+            last_car_log = CarLog.objects.filter(driver=op).order_by('-created_at').first()
+            if last_car_log:
+                op.status = 'checked_out'
+                op.status_label = '🚗 Trip Logged'
+                op.status_time = last_car_log.created_at
+                # Calculate trip duration
+                if last_car_log.exit_time and last_car_log.return_time:
+                    from datetime import datetime as dt_cls
+                    exit_dt = dt_cls.combine(last_car_log.trip_date or date.today(), last_car_log.exit_time)
+                    return_dt = dt_cls.combine(last_car_log.trip_date or date.today(), last_car_log.return_time)
+                    duration = return_dt - exit_dt
+                    total_minutes = int(duration.total_seconds() // 60)
+                    if total_minutes > 0:
+                        hours, minutes = divmod(total_minutes, 60)
+                        op.time_spent = f"{hours}h {minutes}m" if hours > 0 else f"{minutes}m"
+                    else:
+                        op.time_spent = None
+                else:
+                    op.time_spent = None
+                # Show stops as machines visited
+                stops = last_car_log.stops.select_related('machine').order_by('order')
+                op.last_route = [s.machine.name for s in stops]
+                continue
 
         if active_draft:
             # They have an incomplete form in progress
@@ -1188,6 +1460,8 @@ def daily_machine_summary(request):
     total_visited_operator = 0
     total_visited_car = 0
     issues_count = 0
+    total_voids_today = 0
+    total_transactions_today = 0
 
     for machine in machines:
         v_logs = visit_log_map.get(machine.id, [])
@@ -1210,9 +1484,10 @@ def daily_machine_summary(request):
         if v_log:
             total_visited_operator += 1
             for vl in v_logs:
+                total_voids_today += vl.voids or 0
+                total_transactions_today += vl.transactions or 0
                 if vl.machine_issue or vl.product_issue:
                     has_issue = True
-                    break
 
             # Parse visit location coordinates (from primary log)
             visit_coords = parse_coords(v_log.visit_location)
@@ -1263,12 +1538,268 @@ def daily_machine_summary(request):
 
     context = {
         'selected_date': selected_date,
+        'prev_date': selected_date - timedelta(days=1),
+        'next_date': selected_date + timedelta(days=1),
         'summary_data': summary_data,
         'total_machines': machines.count(),
         'visited_count': total_visited_operator,
         'car_visited_count': total_visited_car,
         'issues_count': issues_count,
+        'total_voids_today': total_voids_today,
+        'total_transactions_today': total_transactions_today,
     }
 
     return render(request, 'logistics/daily_machine_summary.html', context)
+
+
+# ===================================================================
+# Supervisor (Head of Operators) Views
+# ===================================================================
+
+def supervisor_login(request):
+    """Code-based login for supervisor."""
+    from .models import SupervisorProfile
+
+    error = None
+    if request.method == 'POST':
+        code = request.POST.get('code', '').strip().upper()
+        try:
+            supervisor = SupervisorProfile.objects.get(code=code, is_active=True)
+            request.session['supervisor_id'] = supervisor.id
+            return redirect('logistics:supervisor_dashboard')
+        except SupervisorProfile.DoesNotExist:
+            error = 'الكود غير صحيح. يرجى المحاولة مرة أخرى.'
+
+    return render(request, 'logistics/supervisor_login.html', {'error': error})
+
+
+def supervisor_required(view_func):
+    """Decorator to check supervisor session."""
+    from functools import wraps
+    from .models import SupervisorProfile
+
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        supervisor_id = request.session.get('supervisor_id')
+        if not supervisor_id:
+            return redirect('logistics:supervisor_login')
+        try:
+            request.supervisor = SupervisorProfile.objects.get(id=supervisor_id, is_active=True)
+        except SupervisorProfile.DoesNotExist:
+            request.session.pop('supervisor_id', None)
+            return redirect('logistics:supervisor_login')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+@supervisor_required
+def supervisor_dashboard(request):
+    """Read-only dashboard for supervisor showing today's overview."""
+    from .models import (
+        SupervisorDailyReport, SupervisorOperatorReview,
+        CarLog, CarLogStop, OperatorDailyRating
+    )
+
+    selected_date = date.today()
+    date_str = request.GET.get('date')
+    if date_str:
+        try:
+            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            selected_date = date.today()
+
+    supervisor = request.supervisor
+
+    # Get all active operators
+    operators = Operator.objects.filter(is_active=True).order_by('name')
+
+    # Get today's visit logs
+    todays_visits = VisitLog.objects.filter(
+        timestamp__year=selected_date.year,
+        timestamp__month=selected_date.month,
+        timestamp__day=selected_date.day,
+        is_completed=True,
+    ).select_related('operator', 'machine')
+
+    visit_map = {}
+    for vl in todays_visits:
+        if vl.operator_id:
+            if vl.operator_id not in visit_map:
+                visit_map[vl.operator_id] = []
+            visit_map[vl.operator_id].append(vl)
+
+    # Get today's car logs
+    car_logs = CarLog.objects.filter(trip_date=selected_date).select_related('driver').prefetch_related('stops__machine')
+    car_map = {}
+    for cl in car_logs:
+        if cl.driver_id:
+            car_map[cl.driver_id] = cl
+
+    # Get supervisor's existing report for this date
+    existing_report = SupervisorDailyReport.objects.filter(
+        supervisor=supervisor, date=selected_date
+    ).prefetch_related('operator_reviews__operator', 'images').first()
+
+    review_map = {}
+    if existing_report:
+        for rev in existing_report.operator_reviews.all():
+            review_map[rev.operator_id] = rev
+
+    # Build operator data
+    operator_data = []
+    for op in operators:
+        visits = visit_map.get(op.id, [])
+        car_log = car_map.get(op.id)
+        review = review_map.get(op.id)
+
+        machines_visited = [v.machine.name for v in visits] if visits else []
+        if car_log:
+            machines_visited += [s.machine.name for s in car_log.stops.all()]
+
+        comments = [v.comments for v in visits if v.comments and v.comments.strip()]
+
+        operator_data.append({
+            'operator': op,
+            'visits': visits,
+            'car_log': car_log,
+            'machines_visited': machines_visited,
+            'comments': comments,
+            'review': review,
+            'has_activity': bool(visits or car_log),
+        })
+
+    context = {
+        'supervisor': supervisor,
+        'selected_date': selected_date,
+        'operator_data': operator_data,
+        'existing_report': existing_report,
+        'total_operators': operators.count(),
+        'active_today': sum(1 for d in operator_data if d['has_activity']),
+        'inactive_count': sum(1 for d in operator_data if not d['has_activity']),
+        'prev_date': selected_date - timedelta(days=1),
+        'next_date': selected_date + timedelta(days=1),
+    }
+    return render(request, 'logistics/supervisor_dashboard.html', context)
+
+
+@supervisor_required
+def supervisor_daily_form(request):
+    """Form for supervisor to submit daily review of all operators."""
+    from .models import (
+        SupervisorDailyReport, SupervisorOperatorReview, SupervisorReportImage
+    )
+
+    supervisor = request.supervisor
+    today = date.today()
+
+    # Get all active operators
+    operators = Operator.objects.filter(is_active=True).order_by('name')
+
+    # Check for existing report
+    existing_report = SupervisorDailyReport.objects.filter(
+        supervisor=supervisor, date=today
+    ).first()
+
+    existing_reviews_map = {}
+    if existing_report:
+        for rev in existing_report.operator_reviews.all():
+            existing_reviews_map[rev.operator_id] = rev
+
+    if request.method == 'POST':
+        # Save the main report
+        location = request.POST.get('location', '')
+        general_issues = request.POST.get('general_issues', '')
+        reported_issues = request.POST.get('reported_issues', '')
+        general_comments = request.POST.get('general_comments', '')
+
+        report, created = SupervisorDailyReport.objects.update_or_create(
+            supervisor=supervisor,
+            date=today,
+            defaults={
+                'location': location,
+                'general_issues': general_issues,
+                'reported_issues': reported_issues,
+                'general_comments': general_comments,
+            }
+        )
+
+        # Save per-operator reviews
+        for op in operators:
+            attended = request.POST.get(f'attended_{op.id}') == 'on'
+            op_location = request.POST.get(f'location_{op.id}', '')
+            rating = request.POST.get(f'rating_{op.id}', '0')
+            op_comments = request.POST.get(f'comments_{op.id}', '')
+
+            try:
+                rating_val = int(rating)
+            except ValueError:
+                rating_val = 0
+
+            SupervisorOperatorReview.objects.update_or_create(
+                report=report,
+                operator=op,
+                defaults={
+                    'attended': attended,
+                    'location': op_location,
+                    'rating': max(0, min(10, rating_val)),
+                    'comments': op_comments,
+                }
+            )
+
+            # Also sync to OperatorDailyRating
+            if rating_val > 0:
+                from .models import OperatorDailyRating
+                OperatorDailyRating.objects.update_or_create(
+                    operator=op,
+                    date=today,
+                    defaults={'rating': max(0, min(10, rating_val))}
+                )
+
+        # Handle image uploads
+        images = request.FILES.getlist('report_images')
+        for img in images:
+            SupervisorReportImage.objects.create(report=report, image=img)
+
+        messages.success(request, 'تم حفظ التقرير اليومي بنجاح!')
+        return redirect('logistics:supervisor_dashboard')
+
+    # Attach reviews to operators for easy template access
+    operators_with_reviews = []
+    for op in operators:
+        rev = existing_reviews_map.get(op.id)
+        operators_with_reviews.append({
+            'op': op,
+            'review': rev,
+        })
+
+    context = {
+        'supervisor': supervisor,
+        'today': today,
+        'operators_with_reviews': operators_with_reviews,
+        'existing_report': existing_report,
+    }
+    return render(request, 'logistics/supervisor_daily_form.html', context)
+
+
+@supervisor_required
+def supervisor_report_history(request):
+    """View past supervisor reports."""
+    from .models import SupervisorDailyReport
+
+    supervisor = request.supervisor
+    reports = SupervisorDailyReport.objects.filter(
+        supervisor=supervisor
+    ).prefetch_related('operator_reviews__operator', 'images').order_by('-date')[:30]
+
+    context = {
+        'supervisor': supervisor,
+        'reports': reports,
+    }
+    return render(request, 'logistics/supervisor_history.html', context)
+
+
+def supervisor_logout(request):
+    """Clear supervisor session."""
+    request.session.pop('supervisor_id', None)
+    return redirect('logistics:supervisor_login')
 

@@ -2,7 +2,11 @@ from django.contrib import admin
 from import_export import resources, fields
 from import_export.admin import ImportExportModelAdmin
 from import_export.widgets import ForeignKeyWidget
-from .models import Operator, Machine, MachineAlias, VisitLog, CarLog, MonthlyReport, CarLogImage, CarLogStop, VisitLogImage
+from .models import (
+    Operator, Machine, MachineAlias, VisitLog, CarLog, MonthlyReport,
+    CarLogImage, CarLogStop, VisitLogImage, SupervisorProfile,
+    SupervisorDailyReport, SupervisorOperatorReview, SupervisorReportImage
+)
 
 
 # ── Resources ──────────────────────────────────────────────
@@ -171,6 +175,34 @@ class MonthlyReportAdmin(admin.ModelAdmin):
 
 
 from .models import OperatorDailyRating
+
+
+@admin.register(SupervisorProfile)
+class SupervisorProfileAdmin(admin.ModelAdmin):
+    list_display = ['name', 'user', 'code', 'is_active', 'created_at']
+    search_fields = ['name', 'user__username']
+    autocomplete_fields = ['user']
+
+
+class SupervisorOperatorReviewInline(admin.TabularInline):
+    model = SupervisorOperatorReview
+    extra = 0
+    autocomplete_fields = ['operator']
+
+
+class SupervisorReportImageInline(admin.TabularInline):
+    model = SupervisorReportImage
+    extra = 0
+
+
+@admin.register(SupervisorDailyReport)
+class SupervisorDailyReportAdmin(admin.ModelAdmin):
+    list_display = ['supervisor', 'date', 'created_at']
+    list_filter = ['supervisor', 'date']
+    date_hierarchy = 'date'
+    ordering = ['-date']
+    inlines = [SupervisorOperatorReviewInline, SupervisorReportImageInline]
+
 
 @admin.register(OperatorDailyRating)
 class OperatorDailyRatingAdmin(admin.ModelAdmin):

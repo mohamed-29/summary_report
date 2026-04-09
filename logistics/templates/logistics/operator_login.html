@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ t.lang_code }}" dir="{{ t.dir }}">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل دخول المشغل | iVend</title>
+    <title>{{ t.operator_login_title }} | iVend</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -154,17 +154,17 @@
 
         .code-input-wrapper .icon {
             position: absolute;
-            right: 16px;
             top: 50%;
             transform: translateY(-50%);
             font-size: 1.2rem;
             opacity: 0.5;
         }
+        html[dir="rtl"] .code-input-wrapper .icon { right: 16px; }
+        html[dir="ltr"] .code-input-wrapper .icon { left: 16px; }
 
         .form-input {
             width: 100%;
             padding: 16px 20px;
-            padding-right: 48px;
             background: var(--bg-input);
             border: 2px solid transparent;
             border-radius: 14px;
@@ -350,8 +350,8 @@
         <div class="login-card">
             <div class="logo-area">
                 <div class="logo-icon">🔑</div>
-                <h1>iVend Operations</h1>
-                <p>أدخل الكود الخاص بك لبدء تسجيل الزيارة</p>
+                <h1>{{ t.operator_login_title }}</h1>
+                <p>{{ t.operator_login_sub }}</p>
             </div>
 
             {% if error %}
@@ -368,12 +368,18 @@
                     </div>
                 </div>
                 <button type="submit" class="submit-btn">
-                    دخول ←
+                    {{ t.login }} {% if t.dir == 'rtl' %}←{% else %}→{% endif %}
                 </button>
             </form>
 
             <div class="footer-text">
-                iVend Logistics System v2.0
+                {{ t.system_version }}
+            </div>
+            <div style="text-align: center; margin-top: 12px;">
+                <a href="{% url 'logistics:set_language' %}?lang={% if lang == 'ar' %}en{% else %}ar{% endif %}"
+                    style="color: var(--primary-light); text-decoration: none; font-size: 0.85rem; font-weight: 600;">
+                    {% if lang == 'ar' %}English{% else %}العربية{% endif %}
+                </a>
             </div>
         </div>
     </div>

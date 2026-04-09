@@ -346,6 +346,89 @@ class MonthlyReport(models.Model):
         super().save(*args, **kwargs)
 
 
+class SupervisorProfile(models.Model):
+    """Links a Django user to a supervisor role (e.g., Head of Operators)."""
+    user = models.OneToOneField(
+        'auth.User', on_delete=models.CASCADE, related_name='supervisor_profile'
+    )
+    name = models.CharField(max_length=255)
+    code = models.CharField(
+        max_length=10, unique=True, null=True, blank=True,
+        help_text="Unique login code for the supervisor"
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            for _ in range(10):
+                new_code = generate_short_code()
+                if not SupervisorProfile.objects.filter(code=new_code).exists():
+                    self.code = new_code
+                    break
+        super().save(*args, **kwargs)
+
+
+class SupervisorDailyReport(models.Model):
+    """Daily report submitted by supervisor (head of operators)."""
+    supervisor = models.ForeignKey(
+        SupervisorProfile, on_delete=models.CASCADE, related_name='daily_reports'
+    )
+    date = models.DateField(help_text="Report date")
+    location = models.TextField(blank=True, default='', help_text="Supervisor GPS location when filling the form")
+    general_issues = models.TextField(blank=True, default='', help_text="General issues for the day")
+    reported_issues = models.TextField(blank=True, default='', help_text="Issues reported by people to supervisor")
+    general_comments = models.TextField(blank=True, default='', help_text="General comments about the day")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['supervisor', 'date']
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.supervisor.name} - {self.date}"
+
+
+class SupervisorOperatorReview(models.Model):
+    """Per-operator review within a supervisor daily report."""
+    report = models.ForeignKey(
+        SupervisorDailyReport, on_delete=models.CASCADE, related_name='operator_reviews'
+    )
+    operator = models.ForeignKey(
+        Operator, on_delete=models.CASCADE, related_name='supervisor_reviews'
+    )
+    attended = models.BooleanField(default=False, help_text="Did the operator attend today?")
+    location = models.TextField(blank=True, default='', help_text="Where is the operator working?")
+    rating = models.IntegerField(
+        default=0, validators=[MinValueValidator(0), MaxValueValidator(10)],
+        help_text="Daily rating 0-10"
+    )
+    comments = models.TextField(blank=True, default='', help_text="Supervisor comments about this operator")
+
+    class Meta:
+        unique_together = ['report', 'operator']
+
+    def __str__(self):
+        return f"Review: {self.operator.name} ({self.report.date})"
+
+
+class SupervisorReportImage(models.Model):
+    """Images uploaded by supervisor in daily report."""
+    report = models.ForeignKey(
+        SupervisorDailyReport, on_delete=models.CASCADE, related_name='images'
+    )
+    image = models.ImageField(upload_to='supervisor_images/%Y/%m/')
+    caption = models.CharField(max_length=255, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Image for report {self.report.date}"
+
+
 class OperatorDailyRating(models.Model):
     """Stores manual daily ratings (1-10) for operators."""
     operator = models.ForeignKey(

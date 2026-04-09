@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ t.lang_code }}" dir="{{ t.dir }}">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل دخول لوحة التحكم | iVend</title>
+    <title>{{ t.dashboard_login_title }} | iVend</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -210,32 +210,38 @@
         <div class="login-card">
             <div class="logo-area">
                 <div class="logo-icon">📊</div>
-                <h1>لوحة التحكم</h1>
-                <p>سجّل دخولك للوصول إلى لوحة التحكم الإدارية</p>
+                <h1>{{ t.dashboard_login_title }}</h1>
+                <p>{{ t.dashboard_login_sub }}</p>
             </div>
 
             {% if form.errors %}
-            <div class="error-msg">⚠️ اسم المستخدم أو كلمة المرور غير صحيحة</div>
+            <div class="error-msg">{{ t.invalid_credentials }}</div>
             {% endif %}
 
             <form method="post">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ next }}">
                 <div class="form-group">
-                    <label for="id_username">اسم المستخدم</label>
+                    <label for="id_username">{{ t.username }}</label>
                     <input type="text" name="username" id="id_username" class="form-input" placeholder="admin" autofocus
                         autocomplete="username">
                 </div>
                 <div class="form-group">
-                    <label for="id_password">كلمة المرور</label>
+                    <label for="id_password">{{ t.password }}</label>
                     <input type="password" name="password" id="id_password" class="form-input" placeholder="••••••••"
                         autocomplete="current-password">
                 </div>
-                <button type="submit" class="submit-btn">دخول ←</button>
+                <button type="submit" class="submit-btn">{{ t.login }} {% if t.dir == 'rtl' %}←{% else %}→{% endif %}</button>
             </form>
 
             <div class="operator-link">
-                <a href="{% url 'logistics:operator_login' %}">👤 دخول كمشغل</a>
+                <a href="{% url 'logistics:operator_login' %}">{{ t.login_as_operator }}</a>
+            </div>
+            <div style="text-align: center; margin-top: 12px;">
+                <a href="{% url 'logistics:set_language' %}?lang={% if lang == 'ar' %}en{% else %}ar{% endif %}"
+                    style="color: var(--primary-light); text-decoration: none; font-size: 0.85rem; font-weight: 600;">
+                    {% if lang == 'ar' %}English{% else %}العربية{% endif %}
+                </a>
             </div>
         </div>
     </div>

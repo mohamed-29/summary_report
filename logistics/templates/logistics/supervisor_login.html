@@ -1,0 +1,28 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}{{ t.supervisor_login }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 420px; margin: 4rem auto; text-align: center;">
+    <div style="background: var(--bg-card); border-radius: 1rem; padding: 2.5rem; border: 1px solid var(--border);">
+        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🛡</div>
+        <h2 style="margin-bottom: 0.5rem;">{{ t.supervisor_login }}</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.9rem;">{{ t.supervisor_login_sub }}</p>
+
+        {% if error %}
+        <div class="message error" style="margin-bottom: 1rem;">{{ error }}</div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="text" name="code" placeholder="{{ t.enter_supervisor_code }}"
+                style="width: 100%; padding: 0.875rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--bg-dark); color: var(--text-primary); font-size: 1.1rem; text-align: center; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 1rem;"
+                autofocus autocomplete="off" maxlength="10">
+            <button type="submit"
+                style="width: 100%; padding: 0.875rem; border-radius: 0.5rem; border: none; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                {{ t.login }}
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

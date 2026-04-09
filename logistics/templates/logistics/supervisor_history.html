@@ -1,0 +1,137 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}{{ t.report_history }} - {{ t.nav_supervisor }}{% endblock %}
+{% block nav_supervisor %}active{% endblock %}
+
+{% block content %}
+<header style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+    <div>
+        <h1 style="margin: 0;">{{ t.report_history }}</h1>
+        <p style="opacity: 0.9; margin-top: 0.25rem;">{{ supervisor.name }} — {{ reports|length }} {{ t.reports }}</p>
+    </div>
+    <a href="{% url 'logistics:supervisor_dashboard' %}"
+        style="padding: 8px 16px; border-radius: 10px; background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-primary); text-decoration: none; font-size: 0.9rem; font-weight: 600;">
+        &larr; {{ t.back_to_dashboard_sup }}
+    </a>
+</header>
+
+{% if reports %}
+{% for report in reports %}
+<div class="report-card" style="background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 1rem; overflow: hidden;">
+    <!-- Report Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); cursor: pointer;" onclick="this.parentElement.classList.toggle('expanded')">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0;"></div>
+            <h3 style="margin: 0; font-size: 0.95rem;">{{ report.date|date:"l, M d Y" }}</h3>
+            {% if report.operator_reviews.all %}
+            <span class="badge badge-info" style="font-size: 0.65rem;">{{ report.operator_reviews.all|length }} {{ t.reviews }}</span>
+            {% endif %}
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            {% if report.location %}
+            <a href="https://www.google.com/maps?q={{ report.location }}" target="_blank"
+                style="font-size: 0.75rem; color: #60a5fa; text-decoration: none;" onclick="event.stopPropagation();">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -1px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                {{ t.map }}
+            </a>
+            {% endif %}
+            <svg class="expand-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" style="transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+    </div>
+
+    <!-- Report Body (expandable) -->
+    <div class="report-body" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease;">
+        <div style="padding: 1.25rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                {% if report.general_comments %}
+                <div>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.25rem;">{{ t.general_comments }}</div>
+                    <div style="font-size: 0.9rem;">{{ report.general_comments }}</div>
+                </div>
+                {% endif %}
+                {% if report.general_issues %}
+                <div>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.25rem;">{{ t.general_issues }}</div>
+                    <div style="font-size: 0.9rem; color: var(--danger);">{{ report.general_issues }}</div>
+                </div>
+                {% endif %}
+                {% if report.reported_issues %}
+                <div>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.25rem;">{{ t.reported_issues }}</div>
+                    <div style="font-size: 0.9rem; color: var(--warning);">{{ report.reported_issues }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if report.operator_reviews.all %}
+            <div style="margin-top: 0.75rem;">
+                <div style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem;">{{ t.operator_reviews }}</div>
+                <div style="display: grid; gap: 0.5rem;">
+                    {% for rev in report.operator_reviews.all %}
+                    <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; background: var(--bg-hover); border-radius: 0.5rem; flex-wrap: wrap;">
+                        <strong style="min-width: 120px;">{{ rev.operator.name }}</strong>
+                        {% if rev.attended %}
+                        <span class="badge badge-success" style="font-size: 0.65rem;">{{ t.attended }}</span>
+                        {% else %}
+                        <span class="badge badge-danger" style="font-size: 0.65rem;">{{ t.absent }}</span>
+                        {% endif %}
+                        {% if rev.rating > 0 %}
+                        <span style="font-size: 0.8rem;">{{ t.rating }}: {{ rev.rating }}/10</span>
+                        {% endif %}
+                        {% if rev.location %}
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">@ {{ rev.location }}</span>
+                        {% endif %}
+                        {% if rev.comments %}
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">- {{ rev.comments|truncatewords:12 }}</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if report.images.all %}
+            <div style="margin-top: 0.75rem; display: flex; gap: 8px; flex-wrap: wrap;">
+                {% for img in report.images.all %}
+                <a href="{{ img.image.url }}" target="_blank" style="width: 70px; height: 70px; border-radius: 8px; overflow: hidden; border: 2px solid var(--border); display: block;">
+                    <img src="{{ img.image.url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="empty-state">
+    <h3>{{ t.no_reports_title }}</h3>
+    <p>{{ t.no_reports_msg }}</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<style>
+    .report-card.expanded .report-body {
+        max-height: 1000px !important;
+    }
+    .report-card.expanded .expand-icon {
+        transform: rotate(180deg);
+    }
+    /* Auto-expand first report */
+    .report-card:first-child .report-body {
+        max-height: 1000px;
+    }
+    .report-card:first-child .expand-icon {
+        transform: rotate(180deg);
+    }
+</style>
+<script>
+    // Mark first card as expanded
+    document.addEventListener('DOMContentLoaded', function() {
+        var first = document.querySelector('.report-card');
+        if (first) first.classList.add('expanded');
+    });
+</script>
+{% endblock %}

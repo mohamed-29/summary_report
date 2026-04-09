@@ -413,6 +413,196 @@ Response (JSON only):"""
     return results
 
 
+def generate_fleet_summary(machines_data, selected_month):
+    """
+    Generate a single AI summary for the entire fleet for a given month.
+    machines_data: list of dicts with machine stats.
+    Returns summary string or None.
+    """
+    client = get_openrouter_client()
+    if not client:
+        return None
+
+    total_machines = len(machines_data)
+    total_trans = sum(d.get('total_transactions', 0) for d in machines_data)
+    total_voids = sum(d.get('total_voids', 0) for d in machines_data)
+    void_pct = round((total_voids / total_trans * 100), 2) if total_trans > 0 else 0
+
+    # Top 5 worst void rates
+    sorted_by_void = sorted(machines_data, key=lambda d: d.get('void_percentage', 0), reverse=True)
+    worst_5 = sorted_by_void[:5]
+    worst_lines = "\n".join(
+        f"  - {d['machine_name']}: {d.get('void_percentage', 0)}% voids ({d.get('total_voids', 0)}/{d.get('total_transactions', 0)})"
+        for d in worst_5 if d.get('void_percentage', 0) > 0
+    )
+
+    # Machines with AI summaries mentioning issues
+    issue_summaries = []
+    for d in machines_data:
+        s = d.get('ai_summary', '')
+        if s and 'issue' in s.lower() or 'problem' in s.lower() or 'fail' in s.lower():
+            issue_summaries.append(f"  - {d['machine_name']}: {s[:150]}")
+
+    prompt = f"""You are an operations intelligence analyst for a vending machine fleet.
+Analyze this month's data and provide a concise executive briefing (4-6 sentences).
+
+Fleet Overview for {selected_month.strftime('%B %Y')}:
+- Total machines: {total_machines}
+- Total transactions: {total_trans:,}
+- Total voids: {total_voids:,} ({void_pct}%)
+
+Worst void rates:
+{worst_lines or '  None significant'}
+
+Machines with reported issues:
+{chr(10).join(issue_summaries[:10]) or '  None'}
+
+Instructions:
+1. Highlight key concerns (high void rates, recurring issues)
+2. Identify machines needing attention
+3. Give 1-2 actionable recommendations
+4. Keep it professional and concise
+
+Reply with ONLY the briefing text."""
+
+    try:
+        return openrouter_generate(client, prompt)
+    except Exception as e:
+        logger.error(f"Fleet summary generation failed: {e}")
+        return None
+
+
+def generate_daily_briefing(summary_data, selected_date, total_machines, visited_count, issues_count, total_voids):
+    """
+    Generate an AI briefing for the daily machine summary page.
+    Returns summary string or None.
+    """
+    client = get_openrouter_client()
+    if not client:
+        return None
+
+    coverage_pct = round((visited_count / total_machines * 100), 1) if total_machines > 0 else 0
+
+    # Collect issues
+    issues_list = []
+    not_visited = []
+    for row in summary_data:
+        machine_name = row['machine'].name
+        vl = row.get('visit_log')
+        if vl and (vl.machine_issue or vl.product_issue):
+            issue_text = f"{vl.machine_issue} {vl.product_issue}".strip()
+            issues_list.append(f"  - {machine_name}: {issue_text[:100]}")
+        if not row.get('visit_logs') and not row.get('car_stops'):
+            not_visited.append(machine_name)
+
+    prompt = f"""You are an operations briefing assistant for a vending machine fleet.
+Generate a short daily briefing (3-4 sentences) for the operations manager.
+
+Daily Report for {selected_date.strftime('%A, %B %d, %Y')}:
+- Coverage: {visited_count}/{total_machines} machines visited ({coverage_pct}%)
+- Total voids today: {total_voids}
+- Issues reported: {issues_count}
+
+Issues detail:
+{chr(10).join(issues_list[:10]) or '  None'}
+
+Not visited ({len(not_visited)} machines):
+{', '.join(not_visited[:15]) or 'All visited'}{'...' if len(not_visited) > 15 else ''}
+
+Instructions:
+1. Summarize today's operations status
+2. Flag any concerns (low coverage, high voids, issues)
+3. Note which machines were missed if coverage is low
+4. Keep it brief and actionable
+
+Reply with ONLY the briefing text."""
+
+    try:
+        return openrouter_generate(client, prompt)
+    except Exception as e:
+        logger.error(f"Daily briefing generation failed: {e}")
+        return None
+
+
+def generate_operator_insights(operator_name, stats):
+    """
+    Generate AI performance insights for an operator.
+    stats: dict with operator performance data.
+    Returns insight string or None.
+    """
+    client = get_openrouter_client()
+    if not client:
+        return None
+
+    prompt = f"""You are an HR performance analyst for a vending machine operations company.
+Provide a brief performance assessment (2-3 sentences) for this operator.
+
+Operator: {operator_name}
+Period: {stats.get('period', 'This month')}
+- Total visits: {stats.get('total_visits', 0)}
+- Unique machines serviced: {stats.get('unique_machines', 0)}
+- Avg cleanliness rating given: {stats.get('avg_cleanliness', 'N/A')}/5
+- Avg satisfaction rating given: {stats.get('avg_satisfaction', 'N/A')}/5
+- Comments submitted: {stats.get('comment_count', 0)}
+- Issues reported: {stats.get('issue_count', 0)}
+
+Recent comments (sample):
+{stats.get('recent_comments', 'None')}
+
+Instructions:
+1. Assess work activity level (visits vs expected)
+2. Note anything positive or concerning
+3. Keep it objective and constructive
+
+Reply with ONLY the assessment text."""
+
+    try:
+        return openrouter_generate(client, prompt)
+    except Exception as e:
+        logger.error(f"Operator insights generation failed: {e}")
+        return None
+
+
+def generate_machine_analysis(machine_name, logs_data):
+    """
+    Generate AI analysis for a specific machine's visit history.
+    Returns analysis string or None.
+    """
+    client = get_openrouter_client()
+    if not client:
+        return None
+
+    prompt = f"""You are a vending machine maintenance analyst.
+Analyze this machine's recent data and provide insights (2-3 sentences).
+
+Machine: {machine_name}
+- Total visits: {logs_data.get('total_visits', 0)}
+- Total transactions: {logs_data.get('total_transactions', 0)}
+- Total voids: {logs_data.get('total_voids', 0)} ({logs_data.get('void_pct', 0)}%)
+- Unique operators: {logs_data.get('unique_operators', 0)}
+- Avg cleanliness: {logs_data.get('avg_cleanliness', 'N/A')}/5
+- Avg satisfaction: {logs_data.get('avg_satisfaction', 'N/A')}/5
+
+Recent issues:
+{logs_data.get('recent_issues', 'None reported')}
+
+Recent comments:
+{logs_data.get('recent_comments', 'None')}
+
+Instructions:
+1. Identify any patterns or recurring problems
+2. Flag void rate if concerning (>3% is notable, >5% is high)
+3. Suggest maintenance priority (low/medium/high)
+
+Reply with ONLY the analysis text."""
+
+    try:
+        return openrouter_generate(client, prompt)
+    except Exception as e:
+        logger.error(f"Machine analysis generation failed: {e}")
+        return None
+
+
 def auto_checkout_stale_visits():
     """
     Automatically check out operators who have been checked in for more than 12 hours.

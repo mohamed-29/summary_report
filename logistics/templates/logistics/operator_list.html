@@ -1,20 +1,17 @@
 {% extends 'logistics/base.html' %}
 
-{% block title %}Operators List - {{ selected_month|date:"F Y" }}{% endblock %}
+{% block title %}{{ t.operators_drivers }} - {{ selected_month|date:"F Y" }}{% endblock %}
+{% block nav_operators %}active{% endblock %}
 
 {% block content %}
 <header>
-    <h1>👥 Operators & Drivers</h1>
-    <p>Performance Overview for {{ selected_month|date:"F Y" }}</p>
+    <h1>{{ t.operators_drivers }}</h1>
+    <p>{{ t.performance_overview }} {{ selected_month|date:"F Y" }}</p>
 </header>
 
-<div class="controls">
-    <a href="{% url 'logistics:dashboard' %}?month={{ selected_month|date:'Y-m' }}">
-        <button type="button">← Back to Dashboard</button>
-    </a>
-
+<div class="controls" style="flex-wrap: wrap;">
     <form method="get" action="" style="display: flex; gap: 1rem; align-items: center;">
-        <label for="month-select">Month:</label>
+        <label for="month-select">{{ t.month }}:</label>
         <select name="month" id="month-select" onchange="this.form.submit()">
             {% for month in available_months %}
             <option value="{{ month|date:'Y-m' }}" {% if month == selected_month %}selected{% endif %}>
@@ -29,24 +26,65 @@
     </form>
 </div>
 
+<!-- Summary Stats -->
+<div class="stats-grid" style="margin-bottom: 1.25rem;">
+    <div class="stat-card">
+        <div class="label">{{ t.total_staff }}</div>
+        <div class="value" id="statTotal">{{ operators|length }}</div>
+    </div>
+    <div class="stat-card success">
+        <div class="label">{{ t.active_today }}</div>
+        <div class="value" id="statActive">0</div>
+    </div>
+    <div class="stat-card" style="border-color: rgba(251,191,36,0.2);">
+        <div class="label" style="color: var(--warning);">{{ t.drivers }}</div>
+        <div class="value" style="color: var(--warning);" id="statDrivers">0</div>
+    </div>
+    <div class="stat-card" style="border-color: rgba(129,140,248,0.2);">
+        <div class="label" style="color: var(--info);">{{ t.operators_label }}</div>
+        <div class="value" style="color: var(--info);" id="statOperators">0</div>
+    </div>
+</div>
+
+<!-- Search & Filter Bar -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <div style="position: relative;">
+            <input type="text" id="opTableSearch" placeholder="{{ t.search_by_name }}"
+                style="padding: 0.5rem 0.75rem 0.5rem 2rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 0.8rem; font-family: var(--font-display); width: 200px;">
+            <svg style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; opacity: 0.4;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <!-- Filter Chips -->
+        <div style="display: flex; gap: 4px;" id="filterChips">
+            <button type="button" class="filter-chip active" data-filter="all">{{ t.all }}</button>
+            <button type="button" class="filter-chip" data-filter="operator">{{ t.operators_label }}</button>
+            <button type="button" class="filter-chip" data-filter="driver">{{ t.drivers }}</button>
+            <button type="button" class="filter-chip" data-filter="active">{{ t.filter_active }}</button>
+            <button type="button" class="filter-chip" data-filter="inactive">{{ t.filter_no_activity }}</button>
+        </div>
+    </div>
+    <span id="opTableSearchCount" style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);"></span>
+</div>
+
 <div class="data-table">
-    <table>
+    <table id="opTable">
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Last Activity</th>
-                <th>Time Spent</th>
-                <th>Total Visits</th>
-                <th>Machines Visited</th>
-                <th>Avg Monthly Rating</th>
-                <th>Actions</th>
+                <th>{{ t.th_name }}</th>
+                <th>{{ t.th_type }}</th>
+                <th>{{ t.th_status }}</th>
+                <th>{{ t.th_last_activity }}</th>
+                <th>{{ t.th_time_spent }}</th>
+                <th>{{ t.th_total_visits }}</th>
+                <th>{{ t.th_machines_visited }}</th>
+                <th>{{ t.th_avg_rating }}</th>
+                <th>{{ t.th_feedback }}</th>
+                <th>{{ t.actions }}</th>
             </tr>
         </thead>
         <tbody>
             {% for op in operators %}
-            <tr>
+            <tr data-type="{% if op.is_driver %}driver{% else %}operator{% endif %}" data-status="{% if op.status == 'checked_in' or op.status == 'checked_out' or op.status == 'checking_in' or op.status == 'checking_out' %}active{% else %}inactive{% endif %}">
                 <td>
                     <a href="{% url 'logistics:operator_detail' op.id %}?month={{ selected_month|date:'Y-m' }}"
                         style="font-weight: bold;">
@@ -55,18 +93,18 @@
                 </td>
                 <td>
                     {% if op.is_driver %}
-                    <span class="badge badge-warning">Driver</span>
+                    <span class="badge badge-warning">{{ t.driver }}</span>
                     {% else %}
-                    <span class="badge badge-success">Operator</span>
+                    <span class="badge badge-success">{{ t.operator }}</span>
                     {% endif %}
                 </td>
                 <td>
                     {% if op.status == 'checked_in' %}
-                    <span class="op-status-badge checked-in">{{ op.status_label }}</span>
+                    <span class="op-status-badge checked-in"><span class="pulse-dot green"></span>{{ op.status_label }}</span>
                     {% elif op.status == 'checked_out' %}
                     <span class="op-status-badge checked-out">{{ op.status_label }}</span>
                     {% elif op.status == 'checking_in' or op.status == 'checking_out' %}
-                    <span class="op-status-badge in-progress">{{ op.status_label }}</span>
+                    <span class="op-status-badge in-progress"><span class="pulse-dot yellow"></span>{{ op.status_label }}</span>
                     {% else %}
                     <span class="op-status-badge no-activity">{{ op.status_label }}</span>
                     {% endif %}
@@ -80,29 +118,62 @@
                 </td>
                 <td>
                     {% if op.time_spent %}
-                    <span style="font-weight: 600; color: var(--primary);">⏱ {{ op.time_spent }}</span>
+                    <span style="font-weight: 600; color: var(--primary);">{{ op.time_spent }}</span>
                     {% else %}
                     <span style="color: var(--text-secondary);">-</span>
                     {% endif %}
                 </td>
-                <td>{{ op.visit_count }}</td>
-                <td>{{ op.machine_count }}</td>
+                <td>{{ op.visit_count }}{% if op.is_driver and op.car_trip_count %} <span style="font-size: 0.7rem; color: var(--text-secondary);">({{ t.trips }})</span>{% endif %}</td>
+                <td>
+                    {{ op.machine_count }}
+                    {% if op.last_route %}
+                    <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;">
+                        {{ t.last }}: {{ op.last_route|join:", "|truncatewords:8 }}
+                    </div>
+                    {% endif %}
+                </td>
                 <td>
                     {% if op.monthly_avg_rating != '-' %}
-                    <span style="font-weight: bold; color: var(--text-primary);">⭐ {{ op.monthly_avg_rating }}/10</span>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div class="rating-bar-bg">
+                            <div class="rating-bar-fill" style="width: {{ op.monthly_avg_rating|floatformat:0 }}0%;"></div>
+                        </div>
+                        <span style="font-weight: bold; font-size: 0.8rem; color: var(--text-primary);">{{ op.monthly_avg_rating }}/10</span>
+                    </div>
                     {% else %}
                     <span style="color: var(--text-secondary);">-</span>
+                    {% endif %}
+                </td>
+                <td style="max-width: 280px;">
+                    {% if op.avg_cleanliness or op.avg_satisfaction %}
+                    <div style="display: flex; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+                        {% if op.avg_cleanliness %}
+                        <span class="badge" style="background: rgba(16,185,129,0.15); color: #10b981; font-size: 0.7rem;">{{ t.clean }}: {{ op.avg_cleanliness }}/5</span>
+                        {% endif %}
+                        {% if op.avg_satisfaction %}
+                        <span class="badge" style="background: rgba(99,102,241,0.15); color: #818cf8; font-size: 0.7rem;">{{ t.sat }}: {{ op.avg_satisfaction }}/5</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% if op.today_comments %}
+                    {% for c in op.today_comments %}
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 2px;">
+                        <strong>{{ c.machine }}:</strong> {{ c.text|truncatewords:10 }}
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <span style="color: var(--text-secondary); font-size: 0.75rem;">{{ t.no_comments_today }}</span>
                     {% endif %}
                 </td>
                 <td>
                     <a href="{% url 'logistics:operator_detail' op.id %}?month={{ selected_month|date:'Y-m' }}">
-                        <button type="button" class="small">View Profile</button>
+                        <button type="button" class="small">{{ t.view }}</button>
                     </a>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="9" style="text-align: center; padding: 2rem;">No operators found.</td>
+                <td colspan="10" style="text-align: center; padding: 2rem;">{{ t.no_operators_found }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -110,52 +181,114 @@
 </div>
 
 <style>
-    button.small {
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
-        background-color: var(--primary);
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-    button.small:hover {
-        background-color: var(--primary-hover);
-    }
-
-    .op-status-badge {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 8px;
-        font-size: 0.8rem;
+    /* Filter Chips */
+    .filter-chip {
+        padding: 0.3rem 0.75rem;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: var(--bg-card);
+        color: var(--text-secondary);
+        font-family: var(--font-display);
+        font-size: 0.72rem;
         font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
         white-space: nowrap;
     }
-
-    .op-status-badge.checked-in {
-        background: rgba(0, 184, 148, 0.15);
-        border: 1px solid rgba(0, 184, 148, 0.4);
-        color: #00b894;
+    .filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+    .filter-chip.active {
+        background: var(--primary-dim);
+        border-color: rgba(34,211,238,0.3);
+        color: var(--primary);
     }
 
-    .op-status-badge.checked-out {
-        background: rgba(108, 92, 231, 0.12);
-        border: 1px solid rgba(108, 92, 231, 0.35);
-        color: #6c5ce7;
+    /* Pulse Dot */
+    .pulse-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        margin-right: 4px;
+        vertical-align: middle;
+        animation: pulseDot 1.5s ease-in-out infinite;
+    }
+    .pulse-dot.green { background: var(--success); box-shadow: 0 0 4px var(--success); }
+    .pulse-dot.yellow { background: var(--warning); box-shadow: 0 0 4px var(--warning); }
+    @keyframes pulseDot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(0.8); }
     }
 
-    .op-status-badge.in-progress {
-        background: rgba(253, 203, 110, 0.15);
-        border: 1px solid rgba(253, 203, 110, 0.4);
-        color: #fdcb6e;
-    }
-
-    .op-status-badge.no-activity {
+    /* Rating Bar */
+    .rating-bar-bg {
+        width: 60px;
+        height: 6px;
         background: var(--bg-hover);
-        color: var(--text-secondary);
+        border-radius: 3px;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    .rating-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--warning), var(--success));
+        border-radius: 3px;
+        transition: width 0.3s;
     }
 </style>
+{% endblock %}
 
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Compute summary stats
+    var rows = document.querySelectorAll('#opTable tbody tr[data-type]');
+    var total = 0, active = 0, drivers = 0, operators = 0;
+    rows.forEach(function(row) {
+        total++;
+        if (row.dataset.type === 'driver') drivers++;
+        else operators++;
+        if (row.dataset.status === 'active') active++;
+    });
+    var el;
+    el = document.getElementById('statTotal'); if (el) el.textContent = total;
+    el = document.getElementById('statActive'); if (el) el.textContent = active;
+    el = document.getElementById('statDrivers'); if (el) el.textContent = drivers;
+    el = document.getElementById('statOperators'); if (el) el.textContent = operators;
+
+    // Filter chips
+    var chips = document.querySelectorAll('.filter-chip');
+    var activeFilter = 'all';
+    chips.forEach(function(chip) {
+        chip.addEventListener('click', function() {
+            chips.forEach(function(c) { c.classList.remove('active'); });
+            this.classList.add('active');
+            activeFilter = this.dataset.filter;
+            applyFilters();
+        });
+    });
+
+    // Search + Filter combined
+    var searchInput = document.getElementById('opTableSearch');
+    searchInput.addEventListener('input', applyFilters);
+
+    function applyFilters() {
+        var q = searchInput.value.toLowerCase().trim();
+        var visible = 0;
+        rows.forEach(function(row) {
+            var matchText = !q || row.textContent.toLowerCase().indexOf(q) !== -1;
+            var matchFilter = activeFilter === 'all' ||
+                (activeFilter === 'operator' && row.dataset.type === 'operator') ||
+                (activeFilter === 'driver' && row.dataset.type === 'driver') ||
+                (activeFilter === 'active' && row.dataset.status === 'active') ||
+                (activeFilter === 'inactive' && row.dataset.status === 'inactive');
+            var show = matchText && matchFilter;
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        var counter = document.getElementById('opTableSearchCount');
+        if (counter) counter.textContent = visible + ' of ' + total;
+    }
+    applyFilters();
+});
+</script>
 {% endblock %}

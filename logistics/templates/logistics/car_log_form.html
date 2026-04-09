@@ -1,11 +1,11 @@
 {% load form_tags %}
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ t.lang_code }}" dir="{{ t.dir }}">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تقرير السائق اليومي</title>
+    <title>{{ t.driver_daily_report }}</title>
     <style>
         :root {
             --bg: #0a0a1a;
@@ -33,7 +33,7 @@
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            direction: rtl;
+            direction: {{ t.dir }};
         }
 
         /* Header */
@@ -209,7 +209,7 @@
             font-size: 0.95rem;
             font-family: inherit;
             transition: all 0.3s;
-            direction: rtl;
+            direction: {{ t.dir }};
         }
 
         .form-input:focus,
@@ -357,7 +357,7 @@
             border-radius: 12px;
             font-size: 0.9rem;
             font-family: inherit;
-            direction: rtl;
+            direction: {{ t.dir }};
         }
 
         .stop-selector select:focus {
@@ -514,9 +514,10 @@
     <!-- Header -->
     <div class="header">
         <div class="header-content">
-            <h1>🚗 تقرير السائق اليومي</h1>
+            <h1>🚗 {{ t.driver_daily_report }}</h1>
             <span class="operator-badge">{{ operator.name }}</span>
-            <a href="{% url 'logistics:operator_logout' %}" class="logout-btn">خروج</a>
+            <a href="{% url 'logistics:operator_logout' %}" class="logout-btn">{{ t.logout }}</a>
+            <a href="{% url 'logistics:set_language' %}?lang={% if lang == 'ar' %}en{% else %}ar{% endif %}" style="color: var(--primary-light); text-decoration: none; font-size: 0.85rem; font-weight: 600; margin-left: 12px;">{% if lang == 'ar' %}EN{% else %}ع{% endif %}</a>
         </div>
     </div>
 
@@ -534,9 +535,8 @@
         <!-- Important Notice -->
         <div
             style="background: rgba(253, 203, 110, 0.1); border: 1px solid rgba(253, 203, 110, 0.35); border-radius: 16px; padding: 14px 16px; margin-bottom: 16px; font-size: 0.82rem; line-height: 1.7; color: #fdcb6e;">
-            <div style="font-weight: 700; margin-bottom: 6px; font-size: 0.9rem;">⚠️ تنبيه هام</div>
-            لو حد عندو أي مشكله في خلال اليوم يكلم المشرف فورا و في لحظتها و في حاله عدم الرد يجب أبلاغ المشرف الأخر و
-            في حاله عدم الرد يجب الأبلاغ للمهندس المسؤول أو أي مهندس متاح و التأكد من وصول المعلومه و رفعها علي الجروب
+            <div style="font-weight: 700; margin-bottom: 6px; font-size: 0.9rem;">⚠️ {{ t.important_notice }}</div>
+            {{ t.important_notice_body }}
         </div>
         {% if messages %}
         <div class="messages">
@@ -556,14 +556,14 @@
             <div class="section" data-section="1">
                 <div class="section-header">
                     <div class="section-icon">📋</div>
-                    <div class="section-title">التأكيدات الأساسية</div>
+                    <div class="section-title">{{ t.basic_confirmations }}</div>
                 </div>
 
                 <div class="form-group">
                     <label>{{ form.trip_date.label }}</label>
                     <div style="display: flex; gap: 10px;">
                         {{ form.trip_date }}
-                        <button type="button" id="setTodayBtn" class="action-btn">📅 اليوم</button>
+                        <button type="button" id="setTodayBtn" class="action-btn">📅 {{ t.today }}</button>
                     </div>
                 </div>
 
@@ -573,10 +573,10 @@
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.received_keys.html_name }}" value="نعم"
                             id="{{ form.received_keys.auto_id }}_yes" {% if form.received_keys.value == "نعم" %}checked{% endif %}>
-                        <label for="{{ form.received_keys.auto_id }}_yes">✓ نعم</label>
+                        <label for="{{ form.received_keys.auto_id }}_yes">✓ {{ t.yes }}</label>
                         <input type="radio" name="{{ form.received_keys.html_name }}" value="لا"
                             id="{{ form.received_keys.auto_id }}_no" {% if form.received_keys.value == "لا" %}checked{% endif %}>
-                        <label for="{{ form.received_keys.auto_id }}_no">✕ لا</label>
+                        <label for="{{ form.received_keys.auto_id }}_no">✕ {{ t.no }}</label>
                     </div>
                 </div>
 
@@ -586,10 +586,10 @@
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.received_locations.html_name }}" value="نعم"
                             id="{{ form.received_locations.auto_id }}_yes" {% if form.received_locations.value == "نعم" %}checked{% endif %}>
-                        <label for="{{ form.received_locations.auto_id }}_yes">✓ نعم</label>
+                        <label for="{{ form.received_locations.auto_id }}_yes">✓ {{ t.yes }}</label>
                         <input type="radio" name="{{ form.received_locations.html_name }}" value="لا"
                             id="{{ form.received_locations.auto_id }}_no" {% if form.received_locations.value == "لا" %}checked{% endif %}>
-                        <label for="{{ form.received_locations.auto_id }}_no">✕ لا</label>
+                        <label for="{{ form.received_locations.auto_id }}_no">✕ {{ t.no }}</label>
                     </div>
                 </div>
 
@@ -599,10 +599,10 @@
                     <div class="yn-toggle">
                         <input type="radio" required name="{{ form.received_shipment_full.html_name }}" value="نعم"
                             id="{{ form.received_shipment_full.auto_id }}_yes" {% if form.received_shipment_full.value == "نعم" %}checked{% endif %}>
-                        <label for="{{ form.received_shipment_full.auto_id }}_yes">✓ نعم</label>
+                        <label for="{{ form.received_shipment_full.auto_id }}_yes">✓ {{ t.yes }}</label>
                         <input type="radio" name="{{ form.received_shipment_full.html_name }}" value="لا"
                             id="{{ form.received_shipment_full.auto_id }}_no" {% if form.received_shipment_full.value == "لا" %}checked{% endif %}>
-                        <label for="{{ form.received_shipment_full.auto_id }}_no">✕ لا</label>
+                        <label for="{{ form.received_shipment_full.auto_id }}_no">✕ {{ t.no }}</label>
                     </div>
                 </div>
             </div>
@@ -611,21 +611,21 @@
             <div class="section" data-section="2">
                 <div class="section-header">
                     <div class="section-icon">📍</div>
-                    <div class="section-title">الأماكن والمسار</div>
+                    <div class="section-title">{{ t.locations_route }}</div>
                 </div>
                 <div class="form-group">
-                    <label>ما هو أسم الأماكن اللتي ستمر عليها اليوم؟</label>
+                    <label>{{ t.places_question }}</label>
                     <div class="stop-selector">
                         <select id="machineSelect">
-                            <option value="">-- اختر ماكينة --</option>
+                            <option value="">{{ t.select_machine_placeholder }}</option>
                             {% for m in machines %}
                             <option value="{{ m.id }}">{{ m.name }}</option>
                             {% endfor %}
                         </select>
-                        <button type="button" class="add-stop-btn" id="addStopBtn">+ أضف</button>
+                        <button type="button" class="add-stop-btn" id="addStopBtn">+ {{ t.add }}</button>
                     </div>
                     <ul class="stop-list" id="stopList">
-                        <li class="stop-empty" id="stopEmpty">لم يتم اختيار أي ماكينة بعد</li>
+                        <li class="stop-empty" id="stopEmpty">{{ t.no_machine_selected }}</li>
                     </ul>
                     <input type="hidden" name="stop_ids" id="stopIdsInput" value="">
                 </div>
@@ -635,7 +635,7 @@
             <div class="section" data-section="3">
                 <div class="section-header">
                     <div class="section-icon">🕐</div>
-                    <div class="section-title">مواعيد الرحلة</div>
+                    <div class="section-title">{{ t.trip_times }}</div>
                 </div>
                 <div class="form-group">
                     <label>{{ form.exit_time.label }}</label>
@@ -651,7 +651,7 @@
             <div class="section" data-section="4">
                 <div class="section-header">
                     <div class="section-icon">⚠️</div>
-                    <div class="section-title">المشاكل والملاحظات</div>
+                    <div class="section-title">{{ t.issues_notes_section }}</div>
                 </div>
                 <div class="form-group">
                     <label>{{ form.issues.label }}</label>
@@ -663,13 +663,13 @@
             <div class="section" data-section="5">
                 <div class="section-header">
                     <div class="section-icon">📸</div>
-                    <div class="section-title">صور الأوراق</div>
+                    <div class="section-title">{{ t.document_photos }}</div>
                 </div>
                 <div class="form-group">
-                    <label>ضع صور لجميع الأوراق الخاصه بلرحله</label>
+                    <label>{{ t.upload_all_trip_docs }}</label>
                     <div class="photo-upload-area" id="photoUploadArea">
                         <div class="icon">📷</div>
-                        <p>اضغط هنا لرفع صور الأوراق</p>
+                        <p>{{ t.click_upload_docs }}</p>
                         <input type="file" name="paper_images" id="paperImagesInput" multiple accept="image/*" required>
                     </div>
                     <div class="photo-preview-grid" id="photoPreviewGrid"></div>
@@ -681,7 +681,7 @@
     <!-- Footer -->
     <div class="footer">
         <button type="submit" form="carForm" class="submit-btn" id="submitBtn">
-            📤 إرسال التقرير
+            📤 {{ t.submit_report }}
         </button>
     </div>
 
@@ -814,7 +814,7 @@
         document.getElementById('carForm').addEventListener('submit', function () {
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
-            btn.textContent = '⏳ جاري الإرسال...';
+            btn.textContent = '⏳ {{ t.submitting }}';
         });
     </script>
 

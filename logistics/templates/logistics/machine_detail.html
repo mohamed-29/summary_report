@@ -1,22 +1,30 @@
 {% extends 'logistics/base.html' %}
 
-{% block title %}{{ machine.name }} - Machine Details{% endblock %}
+{% block title %}{{ machine.name }} - {{ t.machine_details }}{% endblock %}
 
 {% block content %}
 <header>
-    <h1>🔧 {{ machine.name }}</h1>
-    <p>{{ machine.location|default:"No location specified" }}</p>
+    <h1>{{ machine.name }}</h1>
+    <p>{{ machine.location|default:t.no_location }}{% if machine.code %} &middot; {{ t.code }}: {{ machine.code }}{% endif %}</p>
 </header>
 
 <div class="controls">
     <a href="{% url 'logistics:dashboard' %}{% if request.GET.month %}?month={{ request.GET.month }}{% endif %}">
-        <button type="button">← Back to Dashboard</button>
+        <button type="button">&larr; {{ t.back_to_dashboard }}</button>
     </a>
+    {% if machine.latitude and machine.longitude %}
+    <a href="https://www.google.com/maps?q={{ machine.latitude }},{{ machine.longitude }}" target="_blank">
+        <button type="button" style="background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.3); color: #60a5fa;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            {{ t.view_on_map }}
+        </button>
+    </a>
+    {% endif %}
 </div>
 
 {% if aliases %}
-<div class="stat-card" style="margin-bottom: 2rem;">
-    <div class="label">Known Aliases (Typos)</div>
+<div class="stat-card" style="margin-bottom: 1.5rem;">
+    <div class="label">{{ t.known_aliases }}</div>
     <div style="margin-top: 0.5rem;">
         {% for alias in aliases %}
         <span class="badge badge-warning" style="margin-right: 0.5rem; margin-bottom: 0.25rem;">
@@ -28,33 +36,78 @@
 </div>
 {% endif %}
 
+<!-- Performance Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="label">{{ t.total_visits }}</div>
+        <div class="value">{{ total_visits }}</div>
+    </div>
+    <div class="stat-card success">
+        <div class="label">{{ t.transactions }}</div>
+        <div class="value">{{ total_transactions }}</div>
+    </div>
+    <div class="stat-card warning">
+        <div class="label">{{ t.voids }}</div>
+        <div class="value">{{ total_voids }}</div>
+    </div>
+    <div class="stat-card {% if void_percentage > 5 %}danger{% elif void_percentage > 2 %}warning{% else %}success{% endif %}">
+        <div class="label">{{ t.void_pct }}</div>
+        <div class="value">{{ void_percentage }}%</div>
+    </div>
+    <div class="stat-card" style="border-color: rgba(129,140,248,0.2);">
+        <div class="label" style="color: var(--info);">{{ t.unique_operators }}</div>
+        <div class="value" style="color: var(--info);">{{ unique_operators }}</div>
+    </div>
+</div>
+
+<!-- Visit Trend Chart -->
 {% if logs %}
+<div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem;">
+    <div style="font-family: var(--font-mono); color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; font-weight: 600;">
+        {{ t.transaction_trend }}
+    </div>
+    <div style="position: relative; height: 200px;">
+        <canvas id="machineChart"></canvas>
+    </div>
+</div>
+{% endif %}
+
+{% if logs %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+    <h3 style="margin: 0;">{{ t.visit_logs }}</h3>
+    <div style="position: relative;">
+        <input type="text" id="machineLogSearch" placeholder="{{ t.search_logs }}"
+            style="padding: 0.5rem 0.75rem 0.5rem 2rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 0.8rem; width: 180px;">
+        <svg style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; opacity: 0.4;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+</div>
 <div class="data-table">
-    <table>
+    <table id="machineLogTable">
         <thead>
             <tr>
-                <th>Date</th>
-                <th>Operator</th>
-                <th>Transactions</th>
-                <th>Voids</th>
-                <th>Void %</th>
-                <th>Comments</th>
+                <th>{{ t.th_date }}</th>
+                <th>{{ t.th_operator }}</th>
+                <th>{{ t.th_transactions }}</th>
+                <th>{{ t.th_voids }}</th>
+                <th>{{ t.th_void_pct }}</th>
+                <th>{{ t.th_comments }}</th>
+                <th style="width: 40px;"></th>
             </tr>
         </thead>
         <tbody>
             {% for log in logs %}
             <tr>
-                <td>{{ log.timestamp|date:"M d, Y H:i" }}</td>
+                <td style="white-space: nowrap;">{{ log.timestamp|date:"M d, Y H:i" }}</td>
                 <td>
                     {% if log.operator %}
                     <a href="{% url 'logistics:operator_detail' log.operator.id %}">
                         {{ log.operator.name }}
                     </a>
                     {% else %}
-                    Unknown
+                    {{ t.unknown }}
                     {% endif %}
                 </td>
-                <td>{{ log.transactions }}</td>
+                <td style="font-weight: 600;">{{ log.transactions }}</td>
                 <td>{{ log.voids }}</td>
                 <td>
                     <span
@@ -63,6 +116,12 @@
                     </span>
                 </td>
                 <td style="max-width: 300px; font-size: 0.875rem;">{{ log.comments|truncatewords:20|default:"-" }}</td>
+                <td style="white-space: nowrap;">
+                    <a href="{% url 'logistics:download_visit_log' log.id %}" title="Download English"
+                        style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: #10b981; text-decoration: none; transition: all 0.2s; font-size: 0.65rem; font-weight: 700;">EN</a>
+                    <a href="{% url 'logistics:download_visit_log' log.id %}?lang=ar" title="تحميل بالعربي"
+                        style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.25); color: #22d3ee; text-decoration: none; transition: all 0.2s; font-size: 0.65rem; font-weight: 700;">ع</a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
@@ -70,9 +129,81 @@
 </div>
 {% else %}
 <div class="empty-state">
-    <h3>No Logs Found</h3>
-    <p>No visit logs available for this machine.</p>
+    <h3>{{ t.no_logs_title }}</h3>
+    <p>{{ t.no_logs_msg }}</p>
 </div>
 {% endif %}
+{% endblock %}
 
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Table search
+    if (window.initTableSearch) initTableSearch('machineLogSearch', 'machineLogTable');
+
+    {% if logs %}
+    // Build chart data
+    var dayMap = {};
+    {% for log in logs %}
+    (function() {
+        var d = "{{ log.timestamp|date:'M d' }}";
+        if (!dayMap[d]) dayMap[d] = { trans: 0, voids: 0 };
+        dayMap[d].trans += {{ log.transactions|default:"0" }};
+        dayMap[d].voids += {{ log.voids|default:"0" }};
+    })();
+    {% endfor %}
+
+    var labels = Object.keys(dayMap).reverse();
+    var trans = labels.map(function(d) { return dayMap[d].trans; });
+    var voids = labels.map(function(d) { return dayMap[d].voids; });
+
+    var ctx = document.getElementById('machineChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '{{ t.transactions }}',
+                        data: trans,
+                        borderColor: 'rgba(34,211,238,0.9)',
+                        backgroundColor: 'rgba(34,211,238,0.08)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 3,
+                        pointBackgroundColor: 'rgba(34,211,238,1)'
+                    },
+                    {
+                        label: '{{ t.voids }}',
+                        data: voids,
+                        borderColor: 'rgba(248,113,113,0.9)',
+                        backgroundColor: 'rgba(248,113,113,0.08)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 3,
+                        pointBackgroundColor: 'rgba(248,113,113,1)'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: { ticks: { color: '#475569', font: { size: 10 } }, grid: { display: false } },
+                    y: {
+                        ticks: { color: '#475569', font: { size: 10 } },
+                        grid: { color: 'rgba(255,255,255,0.04)' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#64748b', font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8 } }
+                }
+            }
+        });
+    }
+    {% endif %}
+});
+</script>
 {% endblock %}
