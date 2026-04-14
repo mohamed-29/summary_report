@@ -1,0 +1,673 @@
+{% load form_tags %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقييم {{ target_operator.name }} | iVend</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --primary-dark: #5a4bd1;
+            --primary-light: #a29bfe;
+            --accent: #00cec9;
+            --bg-dark: #0f0f1a;
+            --bg-card: #1a1a2e;
+            --bg-input: #16213e;
+            --text-primary: #ffffff;
+            --text-secondary: #b2bec3;
+            --text-label: #dfe6e9;
+            --error: #ff6b6b;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --border: rgba(108, 92, 231, 0.3);
+            --border-input: rgba(108, 92, 231, 0.2);
+            --supervisor: #e17055;
+            --supervisor-light: #fab1a0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .top-bar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .top-bar .back-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary-light);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .top-bar .back-link:hover { color: var(--text-primary); }
+
+        .top-bar .operator-name {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .form-container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        /* Messages */
+        .message {
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .message.success {
+            background: rgba(0, 184, 148, 0.15);
+            border: 1px solid rgba(0, 184, 148, 0.3);
+            color: var(--success);
+        }
+
+        .message.info {
+            background: rgba(108, 92, 231, 0.15);
+            border: 1px solid rgba(108, 92, 231, 0.3);
+            color: var(--primary-light);
+        }
+
+        .message.error {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: var(--error);
+        }
+
+        /* Operator Header */
+        .operator-header {
+            background: var(--bg-card);
+            border-radius: 18px;
+            padding: 24px 20px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .operator-header .op-avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .operator-header h2 {
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+
+        .operator-header .op-role {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        /* Sections */
+        .section {
+            background: var(--bg-card);
+            border-radius: 18px;
+            padding: 24px 20px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            animation: fadeInUp 0.4s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text-label);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-input);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.15);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Radio Buttons */
+        .radio-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-input);
+            padding: 10px 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 1px solid var(--border-input);
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .radio-group label:has(input:checked) {
+            border-color: var(--primary);
+            background: rgba(108, 92, 231, 0.15);
+        }
+
+        .radio-group input[type="radio"] {
+            accent-color: var(--primary);
+        }
+
+        /* Rating Slider */
+        .rating-display {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-top: 8px;
+        }
+
+        .rating-display input[type="number"] {
+            width: 80px;
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 800;
+            padding: 10px;
+        }
+
+        .rating-display .rating-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* GPS */
+        .gps-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .gps-btn {
+            background: linear-gradient(135deg, var(--accent), #00b894);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .gps-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(0, 206, 201, 0.3); }
+
+        .gps-status {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Photo Upload */
+        .photo-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 14px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .photo-upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(108, 92, 231, 0.05);
+        }
+
+        .photo-upload-area .upload-icon { font-size: 2rem; margin-bottom: 8px; }
+        .photo-upload-area .upload-text { color: var(--text-secondary); font-size: 0.85rem; }
+
+        .photo-upload-area input[type="file"] {
+            display: none;
+        }
+
+        .photo-preview {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .photo-preview img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .existing-images {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .existing-images img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 2px solid var(--success);
+        }
+
+        /* Visit Info */
+        .visit-info {
+            background: rgba(108, 92, 231, 0.08);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+        }
+
+        .visit-info h4 {
+            font-size: 0.85rem;
+            color: var(--primary-light);
+            margin-bottom: 6px;
+        }
+
+        .visit-info p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Buttons */
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .submit-btn {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .submit-btn.draft {
+            background: rgba(253, 203, 110, 0.15);
+            border: 1px solid rgba(253, 203, 110, 0.3);
+            color: var(--warning);
+        }
+
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2); }
+
+        .form-errors {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            color: var(--error);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 480px) {
+            .btn-row { flex-direction: column; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <a href="{% url 'logistics:supervisor_dashboard' %}" class="back-link">
+            ← العودة للوحة
+        </a>
+        <div class="operator-name">تقييم: {{ target_operator.name }}</div>
+    </div>
+
+    <div class="form-container">
+        <!-- Messages -->
+        {% if messages %}
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+
+        <!-- Operator Header -->
+        <div class="operator-header">
+            <div class="op-avatar">{% if target_operator.is_driver %}🚗{% else %}👷{% endif %}</div>
+            <h2>{{ target_operator.name }}</h2>
+            <div class="op-role">
+                {% if target_operator.is_driver %}سائق{% else %}مشغل{% endif %}
+                | كود: {{ target_operator.code }}
+            </div>
+        </div>
+
+        <!-- Today's Visit Info (auto-populated) -->
+        {% if today_visits %}
+        <div class="section">
+            <div class="section-header">
+                <div class="section-icon">📊</div>
+                <span class="section-title">نشاط المشغل اليوم</span>
+            </div>
+            {% for visit in today_visits %}
+            <div class="visit-info">
+                <h4>
+                    {% if visit.is_check_in %}تسجيل دخول{% else %}تسجيل خروج{% endif %}
+                    - {{ visit.machine.name }}
+                </h4>
+                <p>
+                    الوقت: {{ visit.timestamp|date:"H:i" }}
+                    {% if visit.transactions %} | معاملات: {{ visit.transactions }}{% endif %}
+                    {% if visit.voids %} | فويد: {{ visit.voids }}{% endif %}
+                    {% if visit.product_issue %}<br>مشاكل منتجات: {{ visit.product_issue }}{% endif %}
+                    {% if visit.machine_issue %}<br>مشاكل ماكينة: {{ visit.machine_issue }}{% endif %}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Form Errors -->
+        {% if form.errors %}
+        <div class="form-errors">
+            {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+            <div>{{ error }}</div>
+            {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Main Form -->
+        <form method="post" enctype="multipart/form-data" id="supervisor-form">
+            {% csrf_token %}
+
+            <!-- Date & Attendance -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">📋</div>
+                    <span class="section-title">الحضور والتاريخ</span>
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.date.label }}</label>
+                    {{ form.date }}
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.attended.label }}</label>
+                    <div class="radio-group">
+                        {% for radio in form.attended %}
+                        {{ radio }}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.operator_location.label }}</label>
+                    {{ form.operator_location }}
+                </div>
+            </div>
+
+            <!-- Supervisor Location -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">📍</div>
+                    <span class="section-title">موقعك الحالي</span>
+                </div>
+
+                <div class="form-group">
+                    <div class="gps-section">
+                        {{ form.supervisor_location }}
+                        <button type="button" class="gps-btn" id="gps-btn" onclick="getLocation()">
+                            📍 تحديد الموقع
+                        </button>
+                    </div>
+                    <div class="gps-status" id="gps-status"></div>
+                    {{ form.supervisor_latitude }}
+                    {{ form.supervisor_longitude }}
+                </div>
+            </div>
+
+            <!-- Rating & Comments -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">⭐</div>
+                    <span class="section-title">التقييم والتعليقات</span>
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.rating.label }}</label>
+                    <div class="rating-display">
+                        {{ form.rating }}
+                        <span class="rating-label">من 10</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.daily_comments.label }}</label>
+                    {{ form.daily_comments }}
+                </div>
+            </div>
+
+            <!-- Issues -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">⚠️</div>
+                    <span class="section-title">المشاكل</span>
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.operator_reported_issues.label }}</label>
+                    {{ form.operator_reported_issues }}
+                </div>
+
+                <div class="form-group">
+                    <label>{{ form.general_issues.label }}</label>
+                    {{ form.general_issues }}
+                </div>
+            </div>
+
+            <!-- Photos -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">📷</div>
+                    <span class="section-title">صور وإثباتات</span>
+                </div>
+
+                {% if existing_images %}
+                <div class="form-group">
+                    <label>صور محفوظة سابقا:</label>
+                    <div class="existing-images">
+                        {% for img in existing_images %}
+                        <img src="{{ img.image.url }}" alt="صورة">
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label>إضافة صور جديدة:</label>
+                    <label class="photo-upload-area" for="photo-input">
+                        <div class="upload-icon">📸</div>
+                        <div class="upload-text">اضغط لاختيار صور</div>
+                        <input type="file" id="photo-input" name="supervisor_photos" multiple accept="image/*">
+                    </label>
+                    <div class="photo-preview" id="photo-preview"></div>
+                </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="btn-row">
+                <button type="submit" name="action" value="draft" class="submit-btn draft">
+                    💾 حفظ كمسودة
+                </button>
+                <button type="submit" name="action" value="complete" class="submit-btn primary">
+                    ✅ حفظ التقييم
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // GPS Location
+        function getLocation() {
+            const btn = document.getElementById('gps-btn');
+            const status = document.getElementById('gps-status');
+            const locInput = document.querySelector('[name="supervisor_location"]');
+            const latInput = document.querySelector('[name="supervisor_latitude"]');
+            const lngInput = document.querySelector('[name="supervisor_longitude"]');
+
+            btn.textContent = '⏳ جاري التحديد...';
+            btn.disabled = true;
+            status.textContent = '';
+
+            if (!navigator.geolocation) {
+                status.textContent = 'المتصفح لا يدعم تحديد الموقع';
+                btn.textContent = '📍 تحديد الموقع';
+                btn.disabled = false;
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    locInput.value = lat.toFixed(8) + ', ' + lng.toFixed(8);
+                    latInput.value = lat.toFixed(12);
+                    lngInput.value = lng.toFixed(12);
+                    btn.textContent = '✅ تم التحديد';
+                    btn.disabled = false;
+                    status.textContent = 'الدقة: ' + Math.round(position.coords.accuracy) + ' متر';
+                },
+                function (error) {
+                    btn.textContent = '📍 تحديد الموقع';
+                    btn.disabled = false;
+                    switch (error.code) {
+                        case 1: status.textContent = 'تم رفض إذن الموقع'; break;
+                        case 2: status.textContent = 'الموقع غير متاح'; break;
+                        case 3: status.textContent = 'انتهت المهلة'; break;
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
+        }
+
+        // Auto-get location on load
+        window.addEventListener('load', function () {
+            const locInput = document.querySelector('[name="supervisor_location"]');
+            if (!locInput.value) {
+                getLocation();
+            }
+        });
+
+        // Photo Preview
+        document.getElementById('photo-input').addEventListener('change', function () {
+            const preview = document.getElementById('photo-preview');
+            preview.innerHTML = '';
+            Array.from(this.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+    </script>
+</body>
+
+</html>

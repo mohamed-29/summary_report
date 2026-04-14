@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة المشرف | iVend</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --primary-dark: #5a4bd1;
+            --primary-light: #a29bfe;
+            --accent: #00cec9;
+            --bg-dark: #0f0f1a;
+            --bg-card: #1a1a2e;
+            --bg-input: #16213e;
+            --text-primary: #ffffff;
+            --text-secondary: #b2bec3;
+            --text-label: #dfe6e9;
+            --error: #ff6b6b;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --border: rgba(108, 92, 231, 0.3);
+            --supervisor: #e17055;
+            --supervisor-light: #fab1a0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .top-bar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .top-bar .operator-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .top-bar .avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--supervisor), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .top-bar .name {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .top-bar .role-badge {
+            font-size: 0.7rem;
+            color: var(--supervisor-light);
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            background: rgba(255, 107, 107, 0.15);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: var(--error);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover { background: rgba(255, 107, 107, 0.25); }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 40px;
+        }
+
+        /* Date Picker */
+        .date-bar {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .date-bar label {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .date-bar input[type="date"] {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 14px;
+            color: var(--text-primary);
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.9rem;
+        }
+
+        .date-bar .go-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 10px;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-light), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* Messages */
+        .message {
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .message.success {
+            background: rgba(0, 184, 148, 0.15);
+            border: 1px solid rgba(0, 184, 148, 0.3);
+            color: var(--success);
+        }
+
+        .message.info {
+            background: rgba(108, 92, 231, 0.15);
+            border: 1px solid rgba(108, 92, 231, 0.3);
+            color: var(--primary-light);
+        }
+
+        .message.error {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: var(--error);
+        }
+
+        /* Operator Cards */
+        .operator-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .op-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 18px 20px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .op-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(108, 92, 231, 0.15);
+        }
+
+        .op-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .op-name {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .op-meta {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .badge.completed {
+            background: rgba(0, 184, 148, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(0, 184, 148, 0.3);
+        }
+
+        .badge.draft {
+            background: rgba(253, 203, 110, 0.15);
+            color: var(--warning);
+            border: 1px solid rgba(253, 203, 110, 0.3);
+        }
+
+        .badge.pending {
+            background: rgba(178, 190, 195, 0.1);
+            color: var(--text-secondary);
+            border: 1px solid rgba(178, 190, 195, 0.2);
+        }
+
+        .badge.attended {
+            background: rgba(0, 184, 148, 0.1);
+            color: var(--success);
+        }
+
+        .badge.absent {
+            background: rgba(255, 107, 107, 0.1);
+            color: var(--error);
+        }
+
+        .badge.checkin {
+            background: rgba(108, 92, 231, 0.1);
+            color: var(--primary-light);
+        }
+
+        .badge.issues {
+            background: rgba(255, 107, 107, 0.1);
+            color: var(--error);
+        }
+
+        .op-rating {
+            font-size: 0.8rem;
+            color: var(--warning);
+            font-weight: 700;
+        }
+
+        .op-action .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .action-btn.fill {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .action-btn.edit {
+            background: rgba(253, 203, 110, 0.15);
+            border: 1px solid rgba(253, 203, 110, 0.3);
+            color: var(--warning);
+        }
+
+        .action-btn.view {
+            background: rgba(0, 184, 148, 0.15);
+            border: 1px solid rgba(0, 184, 148, 0.3);
+            color: var(--success);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+
+        @media (max-width: 600px) {
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .op-card { flex-direction: column; align-items: stretch; text-align: center; }
+            .op-action { text-align: center; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="operator-info">
+            <div class="avatar">👔</div>
+            <div>
+                <div class="name">{{ supervisor.name }}</div>
+                <div class="role-badge">مشرف</div>
+            </div>
+        </div>
+        <a href="{% url 'logistics:operator_logout' %}" class="logout-btn">خروج</a>
+    </div>
+
+    <div class="container">
+        <!-- Messages -->
+        {% if messages %}
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+
+        <!-- Date Picker -->
+        <form class="date-bar" method="get">
+            <label>📅 التاريخ:</label>
+            <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+            <button type="submit" class="go-btn">عرض</button>
+        </form>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_operators }}</div>
+                <div class="stat-label">إجمالي المشغلين</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ attended_count }}</div>
+                <div class="stat-label">حاضرين</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ completed_count }}</div>
+                <div class="stat-label">تم التقييم</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ pending_count }}</div>
+                <div class="stat-label">في الانتظار</div>
+            </div>
+        </div>
+
+        <!-- Operator List -->
+        {% if operator_data %}
+        <div class="operator-grid">
+            {% for item in operator_data %}
+            <div class="op-card">
+                <div class="op-info">
+                    <div class="op-name">
+                        {% if item.operator.is_driver %}🚗{% else %}👷{% endif %}
+                        {{ item.operator.name }}
+                    </div>
+                    <div class="op-meta">
+                        {% if item.is_completed %}
+                            <span class="badge completed">تم التقييم</span>
+                        {% elif item.is_draft %}
+                            <span class="badge draft">مسودة</span>
+                        {% else %}
+                            <span class="badge pending">لم يُقيَّم</span>
+                        {% endif %}
+
+                        {% if item.attended != None %}
+                            {% if item.attended %}
+                                <span class="badge attended">حاضر</span>
+                            {% else %}
+                                <span class="badge absent">غائب</span>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if item.visit_count > 0 %}
+                            <span class="badge checkin">{{ item.checkin_label }} ({{ item.visit_count }})</span>
+                        {% endif %}
+
+                        {% if item.rating != None and item.rating > 0 %}
+                            <span class="op-rating">{{ item.rating }}/10</span>
+                        {% endif %}
+
+                        {% if item.op_issues %}
+                            <span class="badge issues">مشاكل ({{ item.op_issues|length }})</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="op-action">
+                    {% if item.is_completed %}
+                        <a href="{% url 'logistics:supervisor_operator_form' item.operator.id %}" class="action-btn view">عرض / تعديل</a>
+                    {% elif item.is_draft %}
+                        <a href="{% url 'logistics:supervisor_operator_form' item.operator.id %}" class="action-btn edit">استكمال</a>
+                    {% else %}
+                        <a href="{% url 'logistics:supervisor_operator_form' item.operator.id %}" class="action-btn fill">تقييم</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="icon">📋</div>
+            <p>لا يوجد مشغلين مسجلين</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+
+</html>

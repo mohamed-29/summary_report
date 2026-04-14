@@ -2,7 +2,7 @@ from django.contrib import admin
 from import_export import resources, fields
 from import_export.admin import ImportExportModelAdmin
 from import_export.widgets import ForeignKeyWidget
-from .models import Operator, Machine, MachineAlias, VisitLog, CarLog, MonthlyReport, CarLogImage, CarLogStop, VisitLogImage
+from .models import Operator, Machine, MachineAlias, VisitLog, CarLog, MonthlyReport, CarLogImage, CarLogStop, VisitLogImage, SupervisorDailyLog, SupervisorDailyLogImage
 
 
 # ── Resources ──────────────────────────────────────────────
@@ -10,7 +10,7 @@ from .models import Operator, Machine, MachineAlias, VisitLog, CarLog, MonthlyRe
 class OperatorResource(resources.ModelResource):
     class Meta:
         model = Operator
-        fields = ('id', 'name', 'code', 'is_driver', 'is_active', 'created_at', 'updated_at')
+        fields = ('id', 'name', 'code', 'is_driver', 'is_supervisor', 'is_active', 'created_at', 'updated_at')
         export_order = fields
 
 
@@ -70,8 +70,8 @@ class MachineAliasResource(resources.ModelResource):
 @admin.register(Operator)
 class OperatorAdmin(ImportExportModelAdmin):
     resource_class = OperatorResource
-    list_display = ['name', 'code', 'is_driver', 'is_active', 'created_at']
-    list_filter = ['is_driver', 'is_active']
+    list_display = ['name', 'code', 'is_driver', 'is_supervisor', 'is_active', 'created_at']
+    list_filter = ['is_driver', 'is_supervisor', 'is_active']
     search_fields = ['name']
     ordering = ['name']
 
@@ -180,3 +180,20 @@ class OperatorDailyRatingAdmin(admin.ModelAdmin):
     date_hierarchy = 'date'
     ordering = ['-date', 'operator__name']
     autocomplete_fields = ['operator']
+
+
+class SupervisorDailyLogImageInline(admin.TabularInline):
+    model = SupervisorDailyLogImage
+    extra = 0
+    readonly_fields = ['uploaded_at']
+
+
+@admin.register(SupervisorDailyLog)
+class SupervisorDailyLogAdmin(admin.ModelAdmin):
+    list_display = ['date', 'supervisor', 'operator', 'attended', 'rating', 'is_completed']
+    list_filter = ['date', 'supervisor', 'attended', 'is_completed']
+    search_fields = ['supervisor__name', 'operator__name', 'daily_comments']
+    date_hierarchy = 'date'
+    ordering = ['-date']
+    autocomplete_fields = ['supervisor', 'operator']
+    inlines = [SupervisorDailyLogImageInline]
