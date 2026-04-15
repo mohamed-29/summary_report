@@ -1250,14 +1250,11 @@ Reply with ONLY the report text."""
 @login_required
 def visit_log_detail(request, log_id):
     """Show full details of a single visit log entry."""
-    from .models import VisitLogImage
     log = get_object_or_404(VisitLog.objects.select_related('operator', 'machine'), pk=log_id)
     images = log.images.all()
-    t = get_translations(request)
     context = {
         'log': log,
         'images': images,
-        't': t,
     }
     return render(request, 'logistics/visit_log_detail.html', context)
 
