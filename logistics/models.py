@@ -17,6 +17,7 @@ class Operator(models.Model):
         help_text="Unique login code for the operator (e.g., 'A3F1B2')"
     )
     is_driver = models.BooleanField(default=False, help_text="Flag to identify if this operator is a car driver")
+    is_supervisor = models.BooleanField(default=False, help_text="Flag to identify if this operator is a supervisor")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -451,3 +452,85 @@ class OperatorDailyRating(models.Model):
 
     def __str__(self):
         return f"{self.operator.name} - {self.date.strftime('%Y-%m-%d')}: {self.rating}/10"
+
+
+class SupervisorDailyLog(models.Model):
+    """Daily supervisor review for each operator."""
+    supervisor = models.ForeignKey(
+        Operator,
+        on_delete=models.CASCADE,
+        related_name='supervisor_logs',
+        limit_choices_to={'is_supervisor': True},
+        help_text="The supervisor filling this form"
+    )
+    operator = models.ForeignKey(
+        Operator,
+        on_delete=models.CASCADE,
+        related_name='supervised_logs',
+        help_text="The operator being reviewed"
+    )
+    date = models.DateField(help_text="Date of this review")
+
+    attended = models.BooleanField(default=False, help_text="Did the operator attend today?")
+    operator_location = models.CharField(max_length=500, blank=True, help_text="Where the operator was working")
+
+    # Supervisor GPS when filling the form
+    supervisor_latitude = models.DecimalField(
+        max_digits=18, decimal_places=12, null=True, blank=True,
+        help_text="Supervisor GPS latitude when filling the form"
+    )
+    supervisor_longitude = models.DecimalField(
+        max_digits=18, decimal_places=12, null=True, blank=True,
+        help_text="Supervisor GPS longitude when filling the form"
+    )
+    supervisor_location = models.CharField(
+        max_length=500, blank=True, default='',
+        help_text="Supervisor location coordinates string"
+    )
+
+    daily_comments = models.TextField(blank=True, help_text="Supervisor comments about the operator")
+    rating = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(10)],
+        help_text="Daily rating from 0 to 10"
+    )
+
+    operator_reported_issues = models.TextField(blank=True, help_text="Issues the operator reported today")
+    general_issues = models.TextField(blank=True, help_text="General issues noted by supervisor")
+
+    is_completed = models.BooleanField(default=False, help_text="False = draft, True = submitted")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['supervisor', 'operator', 'date']
+        ordering = ['-date']
+        verbose_name = "Supervisor Daily Log"
+        verbose_name_plural = "Supervisor Daily Logs"
+
+    def __str__(self):
+        return f"{self.supervisor.name} -> {self.operator.name} ({self.date})"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Sync rating to OperatorDailyRating when completed
+        if self.is_completed and self.rating > 0:
+            OperatorDailyRating.objects.update_or_create(
+                operator=self.operator,
+                date=self.date,
+                defaults={'rating': self.rating}
+            )
+
+
+class SupervisorDailyLogImage(models.Model):
+    """Photos uploaded by supervisor for a daily log entry."""
+    log = models.ForeignKey(
+        SupervisorDailyLog,
+        on_delete=models.CASCADE,
+        related_name='images'
+    )
+    image = models.ImageField(upload_to='supervisor_log_images/%Y/%m/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Image for SupervisorLog #{self.log_id}"

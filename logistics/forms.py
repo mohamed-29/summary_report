@@ -1,5 +1,5 @@
 from django import forms
-from .models import VisitLog, CarLog, Machine
+from .models import VisitLog, CarLog, Machine, SupervisorDailyLog
 
 
 class OperatorLoginForm(forms.Form):
@@ -241,3 +241,68 @@ class CarLogForm(forms.ModelForm):
             for field in ['received_keys', 'received_locations', 'received_shipment_full']:
                 val = getattr(self.instance, field)
                 self.initial[field] = 'نعم' if val else 'لا'
+
+
+class SupervisorDailyLogForm(forms.ModelForm):
+    """Form for supervisors to review each operator daily."""
+    ATTENDANCE_CHOICES = [('نعم', 'نعم (حضر)'), ('لا', 'لا (غائب)')]
+
+    attended = forms.TypedChoiceField(
+        coerce=lambda x: x == 'نعم',
+        choices=ATTENDANCE_CHOICES,
+        widget=forms.RadioSelect,
+        label='هل حضر المشغل اليوم؟'
+    )
+
+    supervisor_location = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'readonly': 'readonly',
+            'placeholder': 'اضغط على زر تحديد الموقع...'
+        }),
+        label='موقعك الحالي'
+    )
+
+    class Meta:
+        model = SupervisorDailyLog
+        fields = [
+            'date', 'attended', 'operator_location',
+            'supervisor_location', 'supervisor_latitude', 'supervisor_longitude',
+            'daily_comments', 'rating',
+            'operator_reported_issues', 'general_issues',
+        ]
+        widgets = {
+            'date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+            'operator_location': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'أين كان المشغل يعمل اليوم؟'}),
+            'supervisor_latitude': forms.HiddenInput(),
+            'supervisor_longitude': forms.HiddenInput(),
+            'daily_comments': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3, 'placeholder': 'تعليقاتك على أداء المشغل اليوم'}),
+            'rating': forms.NumberInput(attrs={'class': 'form-input', 'min': 0, 'max': 10, 'placeholder': '0-10'}),
+            'operator_reported_issues': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3, 'placeholder': 'المشاكل التي أبلغ عنها المشغل اليوم'}),
+            'general_issues': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3, 'placeholder': 'مشاكل عامة أو ملاحظات إضافية'}),
+        }
+        labels = {
+            'date': 'التاريخ',
+            'operator_location': 'موقع عمل المشغل',
+            'daily_comments': 'تعليقات يومية',
+            'rating': 'التقييم اليومي (0-10)',
+            'operator_reported_issues': 'مشاكل أبلغ عنها المشغل',
+            'general_issues': 'مشاكل عامة',
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.draft = kwargs.pop('draft', False)
+        super().__init__(*args, **kwargs)
+
+        if self.draft:
+            for field_name, field in self.fields.items():
+                field.required = False
+        else:
+            not_required = ['operator_reported_issues', 'general_issues',
+                            'supervisor_latitude', 'supervisor_longitude', 'supervisor_location']
+            for field_name, field in self.fields.items():
+                field.required = field_name not in not_required
+
+        if self.instance.pk:
+            self.initial['attended'] = 'نعم' if self.instance.attended else 'لا'

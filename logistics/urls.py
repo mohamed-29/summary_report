@@ -20,6 +20,9 @@ urlpatterns = [
     path('form/auto-save/', views.visit_auto_save, name='visit_auto_save'),
     path('form/car/', views.car_log_form, name='car_form'),
     path('form/logout/', views.operator_logout, name='operator_logout'),
+    # Supervisor Frontend
+    path('supervisor/', views.supervisor_dashboard, name='supervisor_dashboard'),
+    path('supervisor/operator/<int:operator_id>/', views.supervisor_operator_form, name='supervisor_operator_form'),
     # Dashboard Auth
     path('auth/login/', views.dashboard_login_view, name='dashboard_login'),
     path('auth/logout/', views.dashboard_logout_view, name='dashboard_logout'),

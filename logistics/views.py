@@ -19,7 +19,7 @@ from django.utils import timezone
 
 
 
-from .models import Machine, VisitLog, MonthlyReport, Operator
+from .models import Machine, VisitLog, MonthlyReport, Operator, SupervisorDailyLog, SupervisorDailyLogImage
 
 
 def set_language(request):
@@ -1122,7 +1122,9 @@ def operator_login(request):
             try:
                 operator = Operator.objects.get(code=code)
                 request.session['operator_id'] = operator.id
-                if operator.is_driver:
+                if operator.is_supervisor:
+                    return redirect('logistics:supervisor_dashboard')
+                elif operator.is_driver:
                     return redirect('logistics:car_form')
                 return redirect('logistics:visit_form')
             except Operator.DoesNotExist:
@@ -1344,6 +1346,208 @@ def operator_logout(request):
     """Clear operator session."""
     request.session.pop('operator_id', None)
     return redirect('logistics:operator_login')
+
+
+# ===================================================================
+# Phase 10: Supervisor Frontend
+# ===================================================================
+
+def supervisor_dashboard(request):
+    """Main supervisor dashboard showing all operators for today."""
+    operator_id = request.session.get('operator_id')
+    if not operator_id:
+        return redirect('logistics:operator_login')
+    try:
+        supervisor = Operator.objects.get(id=operator_id, is_supervisor=True)
+    except Operator.DoesNotExist:
+        request.session.flush()
+        return redirect('logistics:operator_login')
+
+    # Date filter (default today)
+    date_str = request.GET.get('date')
+    if date_str:
+        try:
+            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            selected_date = date.today()
+    else:
+        selected_date = date.today()
+
+    # All non-supervisor operators
+    operators = Operator.objects.filter(is_active=True, is_supervisor=False).order_by('name')
+
+    # Get existing supervisor logs for this date
+    today_logs = SupervisorDailyLog.objects.filter(
+        supervisor=supervisor, date=selected_date
+    ).select_related('operator').prefetch_related('images')
+    log_map = {log.operator_id: log for log in today_logs}
+
+    # Get today's visit logs for operator status
+    visit_logs_today = VisitLog.objects.filter(
+        timestamp__date=selected_date,
+        is_completed=True
+    ).select_related('operator', 'machine')
+    visit_map = {}
+    for vl in visit_logs_today:
+        if vl.operator_id not in visit_map:
+            visit_map[vl.operator_id] = []
+        visit_map[vl.operator_id].append(vl)
+
+    operator_data = []
+    completed_count = 0
+    attended_count = 0
+    for op in operators:
+        log = log_map.get(op.id)
+        visits = visit_map.get(op.id, [])
+
+        # Determine check-in status from visit logs
+        last_visit = visits[-1] if visits else None
+        if last_visit:
+            if last_visit.is_check_in:
+                checkin_status = 'checked_in'
+                checkin_label = 'مسجل دخول'
+            else:
+                checkin_status = 'checked_out'
+                checkin_label = 'مسجل خروج'
+        else:
+            checkin_status = 'no_activity'
+            checkin_label = 'لا نشاط'
+
+        # Collect operator issues from today's visits
+        op_issues = []
+        for v in visits:
+            if v.product_issue and v.product_issue.strip():
+                op_issues.append(v.product_issue.strip())
+            if v.machine_issue and v.machine_issue.strip():
+                op_issues.append(v.machine_issue.strip())
+
+        if log and log.is_completed:
+            completed_count += 1
+        if log and log.attended:
+            attended_count += 1
+
+        operator_data.append({
+            'operator': op,
+            'log': log,
+            'attended': log.attended if log else None,
+            'rating': log.rating if log else None,
+            'is_completed': log.is_completed if log else False,
+            'is_draft': log is not None and not log.is_completed,
+            'checkin_status': checkin_status,
+            'checkin_label': checkin_label,
+            'visit_count': len(visits),
+            'op_issues': op_issues,
+        })
+
+    context = {
+        'supervisor': supervisor,
+        'selected_date': selected_date,
+        'operator_data': operator_data,
+        'total_operators': len(operator_data),
+        'completed_count': completed_count,
+        'attended_count': attended_count,
+        'pending_count': len(operator_data) - completed_count,
+    }
+    return render(request, 'logistics/supervisor_dashboard.html', context)
+
+
+def supervisor_operator_form(request, operator_id):
+    """Per-operator daily review form for supervisors."""
+    from .forms import SupervisorDailyLogForm
+
+    sid = request.session.get('operator_id')
+    if not sid:
+        return redirect('logistics:operator_login')
+    try:
+        supervisor = Operator.objects.get(id=sid, is_supervisor=True)
+    except Operator.DoesNotExist:
+        request.session.flush()
+        return redirect('logistics:operator_login')
+
+    try:
+        target_operator = Operator.objects.get(id=operator_id)
+    except Operator.DoesNotExist:
+        messages.error(request, 'المشغل غير موجود')
+        return redirect('logistics:supervisor_dashboard')
+
+    today = date.today()
+
+    # Get or find existing log
+    try:
+        log_instance = SupervisorDailyLog.objects.get(
+            supervisor=supervisor, operator=target_operator, date=today
+        )
+    except SupervisorDailyLog.DoesNotExist:
+        log_instance = None
+
+    # Pre-populate operator issues from today's visit logs
+    today_visits = VisitLog.objects.filter(
+        operator=target_operator,
+        timestamp__date=today,
+        is_completed=True
+    )
+    auto_issues = []
+    for v in today_visits:
+        if v.product_issue and v.product_issue.strip():
+            auto_issues.append(f"منتجات: {v.product_issue.strip()}")
+        if v.machine_issue and v.machine_issue.strip():
+            auto_issues.append(f"ماكينة: {v.machine_issue.strip()}")
+        if v.comments and v.comments.strip():
+            auto_issues.append(f"تعليق: {v.comments.strip()}")
+
+    if request.method == 'POST':
+        action = request.POST.get('action', 'complete')
+        is_draft = (action == 'draft')
+
+        if log_instance:
+            form = SupervisorDailyLogForm(request.POST, instance=log_instance, draft=is_draft)
+        else:
+            form = SupervisorDailyLogForm(request.POST, draft=is_draft)
+
+        if form.is_valid():
+            log = form.save(commit=False)
+            log.supervisor = supervisor
+            log.operator = target_operator
+            if not log.date:
+                log.date = today
+
+            if is_draft:
+                log.is_completed = False
+                log.save()
+                messages.info(request, 'تم حفظ المسودة بنجاح')
+            else:
+                log.is_completed = True
+                log.save()
+                # Handle photo uploads
+                photos = request.FILES.getlist('supervisor_photos')
+                for photo in photos:
+                    SupervisorDailyLogImage.objects.create(log=log, image=photo)
+                messages.success(request, f'تم حفظ تقييم {target_operator.name} بنجاح!')
+
+            return redirect('logistics:supervisor_dashboard')
+    else:
+        initial = {'date': today}
+        if not log_instance and auto_issues:
+            initial['operator_reported_issues'] = '\n'.join(auto_issues)
+        if log_instance:
+            form = SupervisorDailyLogForm(instance=log_instance, draft=True)
+        else:
+            form = SupervisorDailyLogForm(initial=initial, draft=True)
+
+    # Get existing images
+    existing_images = log_instance.images.all() if log_instance else []
+
+    context = {
+        'form': form,
+        'supervisor': supervisor,
+        'target_operator': target_operator,
+        'today': today,
+        'is_draft': log_instance is not None and not log_instance.is_completed,
+        'is_edit': log_instance is not None and log_instance.is_completed,
+        'existing_images': existing_images,
+        'today_visits': today_visits,
+    }
+    return render(request, 'logistics/supervisor_form.html', context)
 
 
 # ===================================================================
