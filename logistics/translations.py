@@ -334,6 +334,10 @@ TRANSLATIONS = {
         'timestamp': 'Timestamp',
         'back': 'Back',
         'type': 'Type',
+        'operator_location': 'Operator Location',
+        'machine_location': 'Machine Location',
+        'open_in_maps': 'Open in Google Maps',
+        'distance': 'Distance',
 
         # ── Day Names (for clock) ──
         'day_sun': 'Sun',
@@ -675,6 +679,10 @@ TRANSLATIONS = {
         'timestamp': 'التوقيت',
         'back': 'رجوع',
         'type': 'النوع',
+        'operator_location': 'موقع المشغل',
+        'machine_location': 'موقع الماكينة',
+        'open_in_maps': 'فتح في خرائط جوجل',
+        'distance': 'المسافة',
 
         # ── Day Names (for clock) ──
         'day_sun': 'أحد',

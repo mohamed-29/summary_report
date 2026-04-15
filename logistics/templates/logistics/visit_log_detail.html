@@ -72,9 +72,56 @@
         {% endif %}
         {% if log.visit_location %}
         <div class="vld-field">
-            <div class="label">{{ t.location }}</div>
-            <div class="value" style="font-size: 0.8rem;">{{ log.visit_location }}</div>
+            <div class="label">{{ t.operator_location }}</div>
+            <div class="value" style="font-size: 0.85rem;">
+                <a href="https://www.google.com/maps?q={{ log.visit_location }}" target="_blank" rel="noopener"
+                    style="display: inline-flex; align-items: center; gap: 5px; color: #818cf8; text-decoration: none; transition: color 0.15s;"
+                    onmouseover="this.style.color='#a5b4fc'" onmouseout="this.style.color='#818cf8'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    {{ t.open_in_maps }}
+                </a>
+            </div>
         </div>
+        {% endif %}
+        {% if log.machine.latitude and log.machine.longitude %}
+        <div class="vld-field">
+            <div class="label">{{ t.machine_location }}</div>
+            <div class="value" style="font-size: 0.85rem;">
+                <a href="https://www.google.com/maps?q={{ log.machine.latitude }},{{ log.machine.longitude }}" target="_blank" rel="noopener"
+                    style="display: inline-flex; align-items: center; gap: 5px; color: #34d399; text-decoration: none; transition: color 0.15s;"
+                    onmouseover="this.style.color='#6ee7b7'" onmouseout="this.style.color='#34d399'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    {{ t.open_in_maps }}
+                </a>
+            </div>
+        </div>
+        {% endif %}
+        {% if log.visit_location and log.machine.latitude and log.machine.longitude %}
+        <div class="vld-field">
+            <div class="label">{{ t.distance }}</div>
+            <div class="value" id="distanceValue" style="font-size: 0.95rem; color: var(--primary);">—</div>
+        </div>
+        <script>
+        (function() {
+            var coords = "{{ log.visit_location }}".split(",").map(function(s){ return parseFloat(s.trim()); });
+            var lat1 = coords[0], lon1 = coords[1];
+            var lat2 = {{ log.machine.latitude }}, lon2 = {{ log.machine.longitude }};
+            if (!isNaN(lat1) && !isNaN(lon1)) {
+                var R = 6371;
+                var dLat = (lat2-lat1)*Math.PI/180;
+                var dLon = (lon2-lon1)*Math.PI/180;
+                var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+                var c = 2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+                var d = R*c;
+                var el = document.getElementById('distanceValue');
+                if (d < 1) { el.textContent = Math.round(d*1000) + ' m'; }
+                else { el.textContent = d.toFixed(2) + ' km'; }
+                if (d > 1) { el.style.color = '#f87171'; }
+                else if (d > 0.2) { el.style.color = '#fbbf24'; }
+                else { el.style.color = '#34d399'; }
+            }
+        })();
+        </script>
         {% endif %}
     </div>
 
