@@ -75,8 +75,7 @@
             <div class="label">{{ t.operator_location }}</div>
             <div class="value" style="font-size: 0.85rem;">
                 <a href="https://www.google.com/maps?q={{ log.visit_location }}" target="_blank" rel="noopener"
-                    style="display: inline-flex; align-items: center; gap: 5px; color: #818cf8; text-decoration: none; transition: color 0.15s;"
-                    onmouseover="this.style.color='#a5b4fc'" onmouseout="this.style.color='#818cf8'">
+                    style="display: inline-flex; align-items: center; gap: 5px; color: #818cf8; text-decoration: none;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     {{ t.open_in_maps }}
                 </a>
@@ -88,8 +87,7 @@
             <div class="label">{{ t.machine_location }}</div>
             <div class="value" style="font-size: 0.85rem;">
                 <a href="https://www.google.com/maps?q={{ log.machine.latitude }},{{ log.machine.longitude }}" target="_blank" rel="noopener"
-                    style="display: inline-flex; align-items: center; gap: 5px; color: #34d399; text-decoration: none; transition: color 0.15s;"
-                    onmouseover="this.style.color='#6ee7b7'" onmouseout="this.style.color='#34d399'">
+                    style="display: inline-flex; align-items: center; gap: 5px; color: #34d399; text-decoration: none;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     {{ t.open_in_maps }}
                 </a>
@@ -98,8 +96,15 @@
         {% endif %}
         {% if log.visit_location and log.machine.latitude and log.machine.longitude %}
         <div class="vld-field">
-            <div class="label">{{ t.distance }}</div>
-            <div class="value" id="distanceValue" style="font-size: 0.95rem; color: var(--primary);">—</div>
+            <div class="label">{{ t.directions }}</div>
+            <div class="value" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <a href="https://www.google.com/maps/dir/{{ log.visit_location }}/{{ log.machine.latitude }},{{ log.machine.longitude }}" target="_blank" rel="noopener"
+                    style="display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 8px; background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(34,211,238,0.15)); color: var(--primary); text-decoration: none; font-size: 0.82rem; font-weight: 600;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                    {{ t.show_directions }}
+                </a>
+                <span id="distanceValue" style="font-size: 0.9rem; font-weight: 700;">—</span>
+            </div>
         </div>
         <script>
         (function() {

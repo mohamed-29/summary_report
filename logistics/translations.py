@@ -338,6 +338,8 @@ TRANSLATIONS = {
         'machine_location': 'Machine Location',
         'open_in_maps': 'Open in Google Maps',
         'distance': 'Distance',
+        'directions': 'Directions',
+        'show_directions': 'Show Directions',
 
         # ── Day Names (for clock) ──
         'day_sun': 'Sun',
@@ -683,6 +685,8 @@ TRANSLATIONS = {
         'machine_location': 'موقع الماكينة',
         'open_in_maps': 'فتح في خرائط جوجل',
         'distance': 'المسافة',
+        'directions': 'الاتجاهات',
+        'show_directions': 'عرض الاتجاهات',
 
         # ── Day Names (for clock) ──
         'day_sun': 'أحد',
