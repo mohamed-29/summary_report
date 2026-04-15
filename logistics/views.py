@@ -1247,9 +1247,11 @@ Reply with ONLY the report text."""
     return redirect('logistics:operator_list')
 
 
-@login_required
 def visit_log_detail(request, log_id):
     """Show full details of a single visit log entry."""
+    # Allow access for logged-in admin users OR session-based supervisors
+    if not request.user.is_authenticated and not request.session.get('supervisor_id'):
+        return redirect('logistics:dashboard_login')
     log = get_object_or_404(VisitLog.objects.select_related('operator', 'machine'), pk=log_id)
     images = log.images.all()
     context = {
