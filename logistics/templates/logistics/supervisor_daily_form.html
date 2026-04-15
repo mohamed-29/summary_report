@@ -163,4 +163,73 @@
     }
 })();
 </script>
+
+<style>
+    /* ── Mobile Optimizations ── */
+    @media (max-width: 640px) {
+        /* Header: stack */
+        header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+        }
+        header h1 {
+            font-size: 1.2rem !important;
+        }
+        header > a {
+            text-align: center;
+        }
+
+        /* General form section */
+        div[style*="padding: 1.5rem"] {
+            padding: 1rem !important;
+        }
+        textarea, input[type="text"], input[type="number"], input[type="file"] {
+            font-size: 16px !important; /* Prevents iOS zoom on focus */
+        }
+
+        /* Operator review cards */
+        .operator-review-card {
+            padding: 0.85rem !important;
+        }
+        .operator-review-card h4 {
+            font-size: 0.9rem !important;
+        }
+        /* Stack location/rating fields vertically */
+        .operator-review-card div[style*="minmax(200px"] {
+            grid-template-columns: 1fr !important;
+        }
+        /* Attended checkbox row */
+        .operator-review-card > div:first-child {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0.4rem !important;
+        }
+
+        /* Submit button */
+        button[type="submit"] {
+            font-size: 1rem !important;
+            padding: 0.85rem !important;
+        }
+
+        /* Location badge */
+        #locationBadge {
+            font-size: 0.65rem !important;
+            padding: 3px 6px !important;
+            display: block !important;
+            margin-top: 0.25rem;
+        }
+        h3[style*="display: flex"] {
+            flex-wrap: wrap !important;
+        }
+    }
+
+    @media (max-width: 380px) {
+        .operator-review-card {
+            padding: 0.65rem !important;
+        }
+        header h1 {
+            font-size: 1rem !important;
+        }
+    }
+</style>
 {% endblock %}

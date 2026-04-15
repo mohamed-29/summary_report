@@ -126,6 +126,73 @@
     .report-card:first-child .expand-icon {
         transform: rotate(180deg);
     }
+
+    /* ── Mobile Optimizations ── */
+    @media (max-width: 640px) {
+        /* Header: stack */
+        header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+        }
+        header h1 {
+            font-size: 1.2rem !important;
+        }
+        header p {
+            font-size: 0.8rem !important;
+        }
+        header > a {
+            text-align: center;
+        }
+
+        /* Report cards */
+        .report-card {
+            margin-bottom: 0.75rem !important;
+        }
+        /* Header row inside card */
+        .report-card > div:first-child {
+            padding: 0.75rem 0.85rem !important;
+            flex-wrap: wrap !important;
+            gap: 0.4rem !important;
+        }
+        .report-card > div:first-child h3 {
+            font-size: 0.85rem !important;
+        }
+
+        /* Body content */
+        .report-body > div {
+            padding: 0.85rem !important;
+        }
+        /* Stack report grid */
+        div[style*="minmax(250px"] {
+            grid-template-columns: 1fr !important;
+        }
+
+        /* Operator reviews inside card: stack content */
+        div[style*="min-width: 120px"] {
+            min-width: auto !important;
+            width: 100%;
+        }
+        div[style*="display: flex"][style*="background: var(--bg-hover)"] {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0.3rem !important;
+        }
+
+        /* Photos: smaller */
+        a[style*="width: 70px"] {
+            width: 55px !important;
+            height: 55px !important;
+        }
+    }
+
+    @media (max-width: 380px) {
+        header h1 {
+            font-size: 1rem !important;
+        }
+        .report-card > div:first-child h3 {
+            font-size: 0.78rem !important;
+        }
+    }
 </style>
 <script>
     // Mark first card as expanded

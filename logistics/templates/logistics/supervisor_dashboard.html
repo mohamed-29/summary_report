@@ -4,50 +4,40 @@
 {% block nav_supervisor %}active{% endblock %}
 
 {% block content %}
-<header style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-    <div>
-        <h1 style="margin: 0;">{{ t.supervisor_dashboard }}</h1>
-        <p style="opacity: 0.9; margin-top: 0.25rem;">{{ t.welcome }}, {{ supervisor.name }}</p>
-    </div>
-    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-        <!-- Prev / Next Day -->
-        <a href="?date={{ prev_date|date:'Y-m-d' }}" class="btn" style="padding: 0.45rem 0.7rem; font-size: 0.85rem; text-decoration: none; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-card); color: var(--text-primary);">&larr;</a>
-        <form method="get" style="display: flex; gap: 0.5rem; align-items: center;">
-            <input type="date" id="date" name="date" value="{{ selected_date|date:'Y-m-d' }}"
-                style="padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary);"
-                onchange="this.form.submit()">
-        </form>
-        <a href="?date={{ next_date|date:'Y-m-d' }}" class="btn" style="padding: 0.45rem 0.7rem; font-size: 0.85rem; text-decoration: none; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-card); color: var(--text-primary);">&rarr;</a>
-        <a href="?date={% now 'Y-m-d' %}" class="btn" style="padding: 0.45rem 0.7rem; font-size: 0.78rem; text-decoration: none; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--primary-dim); color: var(--primary);">{{ t.today }}</a>
-        <a href="{% url 'logistics:supervisor_daily_form' %}"
-            style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border: none; color: white; font-size: 0.9rem; font-weight: 600; text-decoration: none; transition: all 0.2s;">
-            + {{ t.daily_report }}
-        </a>
-        <a href="{% url 'logistics:supervisor_report_history' %}"
-            style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-primary); text-decoration: none; font-size: 0.9rem; font-weight: 600;">
-            {{ t.history }}
-        </a>
-        <a href="{% url 'logistics:supervisor_logout' %}"
-            style="padding: 8px 16px; border-radius: 10px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; text-decoration: none; font-size: 0.9rem; font-weight: 600;">
-            {{ t.logout }}
-        </a>
-    </div>
-</header>
+<!-- Header -->
+<div class="sup-hdr-title">
+    <h1>{{ t.supervisor_dashboard }}</h1>
+    <p>{{ t.welcome }}, {{ supervisor.name }}</p>
+</div>
+<div class="sup-hdr-date">
+    <a href="?date={{ prev_date|date:'Y-m-d' }}" class="sup-btn-sm">&larr;</a>
+    <form method="get" class="sup-date-form">
+        <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" class="sup-date-input" onchange="this.form.submit()">
+    </form>
+    <a href="?date={{ next_date|date:'Y-m-d' }}" class="sup-btn-sm">&rarr;</a>
+    <a href="?date={% now 'Y-m-d' %}" class="sup-btn-sm sup-btn-today">{{ t.today }}</a>
+</div>
+<div class="sup-hdr-actions">
+    <a href="{% url 'logistics:supervisor_daily_form' %}" class="sup-act sup-act-primary">+ {{ t.daily_report }}</a>
+    <a href="{% url 'logistics:supervisor_report_history' %}" class="sup-act sup-act-ghost">{{ t.history }}</a>
+    <a href="{% url 'logistics:supervisor_logout' %}" class="sup-act sup-act-danger">{{ t.logout }}</a>
+</div>
 
-<!-- Alert Banner for Inactive Operators -->
+<!-- Alert -->
 {% if inactive_count > 0 %}
-<div style="background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); border-radius: var(--radius); padding: 0.85rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.75rem;">
-    <div style="width: 36px; height: 36px; background: rgba(248,113,113,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+<div class="sup-alert">
+    <div class="sup-alert-ico">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     </div>
     <div>
-        <div style="font-weight: 700; font-size: 0.85rem; color: #f87171;">{{ inactive_count }} {{ t.inactive_alert_title }}</div>
-        <div style="font-size: 0.75rem; color: var(--text-secondary);">{{ t.inactive_alert_msg }}</div>
+        <strong class="sup-alert-t">{{ inactive_count }} {{ t.inactive_alert_title }}</strong>
+        <div class="sup-alert-sub">{{ t.inactive_alert_msg }}</div>
     </div>
 </div>
 {% endif %}
 
-<div class="stats-grid">
+<!-- Stats -->
+<div class="sup-stats">
     <div class="stat-card">
         <div class="label">{{ t.total_operators }}</div>
         <div class="value">{{ total_operators }}</div>
@@ -63,72 +53,67 @@
     {% if existing_report %}
     <div class="stat-card" style="border-color: var(--primary);">
         <div class="label" style="color: var(--primary);">{{ t.report_status }}</div>
-        <div class="value" style="color: var(--primary); font-size: 1.2rem;">{{ t.submitted }}</div>
+        <div class="value" style="color: var(--primary); font-size: 1.1rem;">{{ t.submitted }}</div>
     </div>
     {% else %}
-    <div class="stat-card" style="border-color: var(--danger);">
-        <div class="label" style="color: var(--danger);">{{ t.report_status }}</div>
-        <div class="value" style="color: var(--danger); font-size: 1.2rem;">{{ t.pending }}</div>
+    <div class="stat-card danger">
+        <div class="label">{{ t.report_status }}</div>
+        <div class="value" style="font-size: 1.1rem;">{{ t.pending }}</div>
     </div>
     {% endif %}
-    <!-- Attendance Rate -->
     <div class="stat-card {% if active_today == total_operators %}success{% elif active_today > 0 %}warning{% else %}danger{% endif %}">
         <div class="label">{{ t.attendance_rate }}</div>
         <div class="value">{% widthratio active_today total_operators 100 %}%</div>
     </div>
 </div>
 
+<!-- Today's Report Summary -->
 {% if existing_report %}
-<div style="background: var(--bg-card); border-radius: 0.75rem; border: 1px solid var(--border); padding: 1.25rem; margin-bottom: 1.5rem;">
-    <h3 style="margin-bottom: 0.75rem; font-size: 1rem;">{{ t.todays_report_summary }}</h3>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+<div class="sup-card sup-report-box">
+    <h3>{{ t.todays_report_summary }}</h3>
+    <div class="sup-report-grid">
         {% if existing_report.general_comments %}
         <div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.25rem;">{{ t.general_comments }}</div>
-            <div style="font-size: 0.9rem;">{{ existing_report.general_comments }}</div>
+            <div class="sup-lbl">{{ t.general_comments }}</div>
+            <div>{{ existing_report.general_comments }}</div>
         </div>
         {% endif %}
         {% if existing_report.general_issues %}
         <div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.25rem;">{{ t.general_issues }}</div>
-            <div style="font-size: 0.9rem; color: var(--danger);">{{ existing_report.general_issues }}</div>
+            <div class="sup-lbl">{{ t.general_issues }}</div>
+            <div style="color: var(--danger);">{{ existing_report.general_issues }}</div>
         </div>
         {% endif %}
         {% if existing_report.reported_issues %}
         <div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.25rem;">{{ t.reported_issues }}</div>
-            <div style="font-size: 0.9rem; color: var(--warning);">{{ existing_report.reported_issues }}</div>
+            <div class="sup-lbl">{{ t.reported_issues }}</div>
+            <div style="color: var(--warning);">{{ existing_report.reported_issues }}</div>
         </div>
         {% endif %}
     </div>
     {% if existing_report.images.all %}
-    <div style="margin-top: 1rem; display: flex; gap: 8px; flex-wrap: wrap;">
+    <div class="sup-thumbs">
         {% for img in existing_report.images.all %}
-        <a href="{{ img.image.url }}" target="_blank" style="width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 2px solid var(--border); display: block;">
-            <img src="{{ img.image.url }}" style="width: 100%; height: 100%; object-fit: cover;">
-        </a>
+        <a href="{{ img.image.url }}" target="_blank" class="sup-thumb"><img src="{{ img.image.url }}" alt=""></a>
         {% endfor %}
     </div>
     {% endif %}
 </div>
 {% endif %}
 
-<!-- Attendance Chart -->
-<div style="display: grid; grid-template-columns: 220px 1fr; gap: 1rem; margin-bottom: 1.5rem;">
-    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem;">
-        <div style="font-family: var(--font-mono); color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; font-weight: 600;">{{ t.attendance }}</div>
-        <div style="position: relative; height: 180px;">
-            <canvas id="attendanceChart"></canvas>
-        </div>
+<!-- Chart + Table -->
+<div class="sup-body">
+    <div class="sup-card sup-chart-box">
+        <div class="sup-chart-label">{{ t.attendance }}</div>
+        <div class="sup-chart-wrap"><canvas id="attendanceChart"></canvas></div>
     </div>
-    <div>
-        <h3 style="margin-bottom: 0.75rem;">{{ t.operators_overview }} - {{ selected_date|date:"M d, Y" }}</h3>
-        <div style="position: relative; margin-bottom: 0.5rem;">
-            <input type="text" id="supOpSearch" placeholder="{{ t.search_operators }}"
-                style="padding: 0.5rem 0.75rem 0.5rem 2rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 0.8rem; width: 200px;">
-            <svg style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; opacity: 0.4;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <div class="sup-table-area">
+        <h3>{{ t.operators_overview }} - {{ selected_date|date:"M d, Y" }}</h3>
+        <div class="sup-search-wrap">
+            <input type="text" id="supOpSearch" placeholder="{{ t.search_operators }}" class="sup-search">
+            <svg class="sup-search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </div>
-        <div class="data-table" style="max-height: 400px; overflow-y: auto;">
+        <div class="data-table sup-tbl-scroll">
             <table id="supOpTable">
                 <thead>
                     <tr>
@@ -142,62 +127,22 @@
                 </thead>
                 <tbody>
                     {% for d in operator_data %}
-                    <tr style="{% if not d.has_activity %}opacity: 0.6;{% endif %}">
-                        <td style="font-weight: 600;">{{ d.operator.name }}</td>
-                        <td>
-                            {% if d.operator.is_driver %}
-                            <span class="badge badge-warning">{{ t.driver }}</span>
-                            {% else %}
-                            <span class="badge badge-success">{{ t.operator }}</span>
-                            {% endif %}
+                    <tr {% if not d.has_activity %}class="sup-row-dim"{% endif %}>
+                        <td class="sup-td-name">{{ d.operator.name }}</td>
+                        <td>{% if d.operator.is_driver %}<span class="badge badge-warning">{{ t.driver }}</span>{% else %}<span class="badge badge-success">{{ t.operator }}</span>{% endif %}</td>
+                        <td>{% if d.has_activity %}<span class="badge badge-success">{{ t.active }}</span>{% else %}<span class="badge" style="background:var(--bg-hover);color:var(--text-secondary);">{{ t.no_activity }}</span>{% endif %}</td>
+                        <td class="sup-td-machines">
+                            {% if d.machines_visited %}{% for m in d.machines_visited %}{% if m.visit_log_id %}<a href="{% url 'logistics:visit_log_detail' m.visit_log_id %}" class="sup-mtag">{{ m.name }}</a>{% else %}<span class="sup-mtag">{{ m.name }}</span>{% endif %}{% endfor %}{% else %}<span class="sup-muted">-</span>{% endif %}
                         </td>
-                        <td>
-                            {% if d.has_activity %}
-                            <span class="badge badge-success">{{ t.active }}</span>
-                            {% else %}
-                            <span class="badge" style="background: var(--bg-hover); color: var(--text-secondary);">{{ t.no_activity }}</span>
-                            {% endif %}
-                        </td>
-                        <td style="max-width: 200px;">
-                            {% if d.machines_visited %}
-                            {% for m in d.machines_visited %}
-                            {% if m.visit_log_id %}
-                            <a href="{% url 'logistics:visit_log_detail' m.visit_log_id %}" style="display: inline-block; font-size: 0.7rem; background: rgba(99,102,241,0.1); color: #818cf8; padding: 2px 6px; border-radius: 4px; margin: 1px; text-decoration: none; transition: background 0.15s;" onmouseover="this.style.background='rgba(99,102,241,0.25)'" onmouseout="this.style.background='rgba(99,102,241,0.1)'">{{ m.name }}</a>
-                            {% else %}
-                            <span style="display: inline-block; font-size: 0.7rem; background: rgba(99,102,241,0.1); color: #818cf8; padding: 2px 6px; border-radius: 4px; margin: 1px;">{{ m.name }}</span>
-                            {% endif %}
-                            {% endfor %}
-                            {% else %}
-                            <span style="color: var(--text-secondary);">-</span>
-                            {% endif %}
-                        </td>
-                        <td style="max-width: 200px; font-size: 0.85rem;">
-                            {% if d.comments %}
-                            {% for c in d.comments %}
-                            <div>{{ c|truncatewords:12 }}</div>
-                            {% endfor %}
-                            {% else %}
-                            <span style="color: var(--text-secondary);">-</span>
-                            {% endif %}
-                        </td>
+                        <td class="sup-td-cmt">{% if d.comments %}{% for c in d.comments %}<div>{{ c|truncatewords:12 }}</div>{% endfor %}{% else %}<span class="sup-muted">-</span>{% endif %}</td>
                         <td>
                             {% if d.review %}
-                            <div style="display: flex; flex-direction: column; gap: 4px;">
-                                {% if d.review.attended %}
-                                <span class="badge badge-success" style="font-size: 0.7rem;">{{ t.attended }}</span>
-                                {% else %}
-                                <span class="badge badge-danger" style="font-size: 0.7rem;">{{ t.absent }}</span>
-                                {% endif %}
-                                {% if d.review.rating > 0 %}
-                                <span style="font-size: 0.8rem; font-weight: 600;">{{ t.rating }}: {{ d.review.rating }}/10</span>
-                                {% endif %}
-                                {% if d.review.comments %}
-                                <span style="font-size: 0.75rem; color: var(--text-secondary);">{{ d.review.comments|truncatewords:8 }}</span>
-                                {% endif %}
+                            <div class="sup-rev">
+                                {% if d.review.attended %}<span class="badge badge-success" style="font-size:0.65rem;">{{ t.attended }}</span>{% else %}<span class="badge badge-danger" style="font-size:0.65rem;">{{ t.absent }}</span>{% endif %}
+                                {% if d.review.rating > 0 %}<span style="font-size:0.78rem;font-weight:600;">{{ d.review.rating }}/10</span>{% endif %}
+                                {% if d.review.comments %}<span class="sup-muted" style="font-size:0.7rem;">{{ d.review.comments|truncatewords:8 }}</span>{% endif %}
                             </div>
-                            {% else %}
-                            <span style="color: var(--text-secondary); font-size: 0.8rem;">{{ t.not_reviewed }}</span>
-                            {% endif %}
+                            {% else %}<span class="sup-muted" style="font-size:0.78rem;">{{ t.not_reviewed }}</span>{% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -211,48 +156,201 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Attendance donut
-    var activeCount = {{ active_today }};
-    var inactiveCount = {{ inactive_count }};
     var ctx = document.getElementById('attendanceChart');
     if (ctx) {
         new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: ['{{ t.active }}', '{{ t.inactive }}'],
-                datasets: [{
-                    data: [activeCount, inactiveCount],
-                    backgroundColor: ['rgba(52,211,153,0.8)', 'rgba(248,113,113,0.5)'],
-                    borderColor: ['rgba(52,211,153,1)', 'rgba(248,113,113,0.8)'],
-                    borderWidth: 1,
-                    hoverOffset: 6
-                }]
+                datasets: [{ data: [{{ active_today }}, {{ inactive_count }}], backgroundColor: ['rgba(52,211,153,0.8)','rgba(248,113,113,0.5)'], borderColor: ['rgba(52,211,153,1)','rgba(248,113,113,0.8)'], borderWidth: 1, hoverOffset: 6 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '60%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: '#64748b', font: { size: 11 }, padding: 10, usePointStyle: true, pointStyleWidth: 8 }
-                    }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 }, padding: 8, usePointStyle: true, pointStyleWidth: 8 } } } }
         });
     }
-
-    // Table search
     if (window.initTableSearch) initTableSearch('supOpSearch', 'supOpTable');
 });
 </script>
 
 <style>
-    @media (max-width: 900px) {
-        div[style*="grid-template-columns: 220px"] {
-            grid-template-columns: 1fr !important;
-        }
+/* ══════════════════════════════════════
+   SUPERVISOR DASHBOARD — DESKTOP
+   ══════════════════════════════════════ */
+.sup-hdr-title h1 { margin: 0; }
+.sup-hdr-title p { opacity: 0.85; margin-top: 0.15rem; font-size: 0.85rem; }
+.sup-hdr-date { display: flex; align-items: center; gap: 0.35rem; margin: 0.5rem 0; }
+.sup-date-form { min-width: 0; }
+.sup-btn-sm {
+    padding: 0.4rem 0.65rem; font-size: 0.82rem; text-decoration: none;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); color: var(--text-primary); font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.sup-btn-today { background: var(--primary-dim); color: var(--primary); font-size: 0.75rem; }
+.sup-date-input {
+    padding: 0.4rem 0.35rem; border-radius: 0.4rem; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text-primary); font-size: 0.82rem; width: 100%;
+}
+.sup-hdr-actions { display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.75rem; }
+.sup-act {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0.45rem 0.9rem; border-radius: 8px; font-size: 0.82rem;
+    font-weight: 600; text-decoration: none; white-space: nowrap; transition: all 0.15s;
+}
+.sup-act-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; }
+.sup-act-ghost { background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-primary); }
+.sup-act-danger { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); color: #ef4444; }
+
+/* Alert */
+.sup-alert {
+    display: flex; align-items: center; gap: 0.6rem;
+    background: rgba(248,113,113,0.07); border: 1px solid rgba(248,113,113,0.2);
+    border-radius: var(--radius); padding: 0.6rem 0.85rem; margin-bottom: 0.75rem;
+}
+.sup-alert-ico {
+    width: 30px; height: 30px; min-width: 30px; background: rgba(248,113,113,0.12);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+}
+.sup-alert-t { font-size: 0.8rem; color: #f87171; }
+.sup-alert-sub { font-size: 0.68rem; color: var(--text-secondary); }
+
+/* Stats */
+.sup-stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.5rem; margin-bottom: 0.75rem;
+}
+.sup-stats .stat-card { min-width: 0; }
+
+/* Cards */
+.sup-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem; margin-bottom: 0.75rem;
+}
+
+/* Report Summary */
+.sup-report-box h3 { margin: 0 0 0.6rem; font-size: 0.95rem; }
+.sup-report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; }
+.sup-lbl { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.15rem; letter-spacing: 0.05em; }
+.sup-thumbs { margin-top: 0.75rem; display: flex; gap: 6px; flex-wrap: wrap; }
+.sup-thumb { width: 64px; height: 64px; border-radius: 6px; overflow: hidden; border: 2px solid var(--border); display: block; }
+.sup-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Chart + Table */
+.sup-body { display: grid; grid-template-columns: 200px 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+.sup-chart-box { padding: 0.85rem; }
+.sup-chart-label { font-family: var(--font-mono); color: var(--text-muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; font-weight: 600; }
+.sup-chart-wrap { position: relative; height: 160px; }
+.sup-table-area h3 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+.sup-search-wrap { position: relative; margin-bottom: 0.4rem; }
+.sup-search {
+    padding: 0.4rem 0.6rem 0.4rem 1.8rem; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--bg-card);
+    color: var(--text-primary); font-size: 0.78rem; width: 180px;
+}
+.sup-search-ico { position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; opacity: 0.35; }
+.sup-tbl-scroll { max-height: 380px; overflow-y: auto; }
+
+/* Table cells */
+.sup-row-dim { opacity: 0.55; }
+.sup-td-name { font-weight: 600; }
+.sup-td-machines { max-width: 180px; }
+.sup-td-cmt { max-width: 180px; font-size: 0.82rem; }
+.sup-mtag { display: inline-block; font-size: 0.65rem; background: rgba(99,102,241,0.1); color: #818cf8; padding: 1px 5px; border-radius: 3px; margin: 1px; text-decoration: none; }
+a.sup-mtag:hover { background: rgba(99,102,241,0.25); }
+.sup-muted { color: var(--text-secondary); }
+.sup-rev { display: flex; flex-direction: column; gap: 3px; }
+
+/* ══════════ TABLET ══════════ */
+@media (max-width: 900px) {
+    .sup-body { grid-template-columns: 1fr; }
+    .sup-chart-box { display: flex; align-items: center; gap: 0.75rem; }
+    .sup-chart-wrap { height: 120px; width: 120px; flex-shrink: 0; }
+    .sup-chart-label { margin-bottom: 0; }
+}
+
+/* ══════════ MOBILE ══════════ */
+@media (max-width: 640px) {
+    /* Fix: sidebar transform causes main-content to be wider than viewport */
+    .main-content { width: 100vw !important; max-width: 100vw !important; overflow-x: hidden !important; }
+    .container { width: 100% !important; max-width: 100% !important; padding: 0.5rem 0.4rem 1rem !important; box-sizing: border-box !important; }
+
+    /* Title */
+    .sup-hdr-title h1 { font-size: 1rem; }
+    .sup-hdr-title p { font-size: 0.7rem; margin-top: 0; }
+
+    /* Date row — CSS grid, 4 columns, no overflow possible */
+    .sup-hdr-date {
+        display: grid;
+        grid-template-columns: 32px 1fr 32px auto;
+        gap: 3px;
+        margin: 0.25rem 0;
     }
+    .sup-btn-sm { padding: 0.3rem 0; font-size: 0.78rem; }
+    .sup-btn-today { font-size: 0.62rem; padding: 0.3rem 0.35rem; }
+    .sup-date-input { font-size: 16px; padding: 0.28rem 0.2rem; }
+
+    /* Actions — CSS grid, 3 equal columns */
+    .sup-hdr-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 3px;
+        margin-bottom: 0.4rem;
+    }
+    .sup-act { padding: 0.38rem 0; font-size: 0.65rem; border-radius: 6px; }
+
+    /* Alert */
+    .sup-alert { padding: 0.4rem 0.5rem; gap: 0.35rem; margin-bottom: 0.4rem; }
+    .sup-alert-ico { width: 24px; height: 24px; min-width: 24px; }
+    .sup-alert-ico svg { width: 12px; height: 12px; }
+    .sup-alert-t { font-size: 0.7rem; }
+    .sup-alert-sub { font-size: 0.6rem; }
+
+    /* Stats — 2 cols, never overflows */
+    .sup-stats {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 4px !important;
+        margin-bottom: 0.4rem !important;
+    }
+    .sup-stats .stat-card {
+        padding: 0.4rem 0.35rem !important;
+        border-radius: 6px !important;
+    }
+    .sup-stats .stat-card .value { font-size: 1rem !important; }
+    .sup-stats .stat-card .label { font-size: 0.45rem !important; letter-spacing: 0.02em !important; }
+    .sup-stats .stat-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+    /* Report summary */
+    .sup-report-box { padding: 0.55rem; margin-bottom: 0.4rem; }
+    .sup-report-box h3 { font-size: 0.8rem; margin-bottom: 0.35rem; }
+    .sup-report-grid { grid-template-columns: 1fr !important; gap: 0.4rem; }
+    .sup-thumb { width: 44px; height: 44px; }
+
+    /* Chart + Table */
+    .sup-body { grid-template-columns: 1fr; gap: 0.35rem; margin-bottom: 0.35rem; }
+    .sup-chart-box { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.5rem; }
+    .sup-chart-wrap { height: 80px; width: 80px; min-width: 80px; flex-shrink: 0; }
+    .sup-chart-label { margin-bottom: 0; font-size: 0.5rem; display: none; /* label is visible in legend */ }
+
+    /* Table */
+    .sup-table-area h3 { font-size: 0.8rem; margin-bottom: 0.25rem; }
+    .sup-search-wrap { margin-bottom: 0.25rem; }
+    .sup-search { width: 100%; font-size: 16px; padding: 0.3rem 0.4rem 0.3rem 1.5rem; }
+    .sup-tbl-scroll { max-height: none; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #supOpTable { min-width: 500px; }
+    #supOpTable th, #supOpTable td { padding: 0.28rem 0.3rem !important; font-size: 0.65rem !important; }
+    #supOpTable th { font-size: 0.5rem !important; white-space: nowrap; }
+    .sup-td-machines { max-width: 90px; }
+    .sup-td-cmt { max-width: 70px; font-size: 0.65rem; }
+}
+
+/* ══════════ TINY (≤ 380px) ══════════ */
+@media (max-width: 380px) {
+    .container { padding: 0.35rem 0.3rem 0.75rem !important; }
+    .sup-hdr-title h1 { font-size: 0.9rem; }
+    .sup-act { font-size: 0.58rem; }
+    .sup-btn-sm { font-size: 0.72rem; }
+    .sup-stats .stat-card .value { font-size: 0.9rem !important; }
+    .sup-stats .stat-card .label { font-size: 0.4rem !important; }
+    .sup-chart-wrap { height: 75px; width: 75px; min-width: 75px; }
+}
 </style>
 {% endblock %}
-
