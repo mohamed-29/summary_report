@@ -161,7 +161,11 @@
                         <td style="max-width: 200px;">
                             {% if d.machines_visited %}
                             {% for m in d.machines_visited %}
-                            <span style="display: inline-block; font-size: 0.7rem; background: rgba(99,102,241,0.1); color: #818cf8; padding: 2px 6px; border-radius: 4px; margin: 1px;">{{ m }}</span>
+                            {% if m.visit_log_id %}
+                            <a href="{% url 'logistics:visit_log_detail' m.visit_log_id %}" style="display: inline-block; font-size: 0.7rem; background: rgba(99,102,241,0.1); color: #818cf8; padding: 2px 6px; border-radius: 4px; margin: 1px; text-decoration: none; transition: background 0.15s;" onmouseover="this.style.background='rgba(99,102,241,0.25)'" onmouseout="this.style.background='rgba(99,102,241,0.1)'">{{ m.name }}</a>
+                            {% else %}
+                            <span style="display: inline-block; font-size: 0.7rem; background: rgba(99,102,241,0.1); color: #818cf8; padding: 2px 6px; border-radius: 4px; margin: 1px;">{{ m.name }}</span>
+                            {% endif %}
                             {% endfor %}
                             {% else %}
                             <span style="color: var(--text-secondary);">-</span>

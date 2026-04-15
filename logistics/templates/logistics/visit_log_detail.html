@@ -1,0 +1,216 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}{{ t.visit_log_detail_title }} - {{ log.machine.name }}{% endblock %}
+
+{% block content %}
+<header>
+    <h1>{{ log.machine.name }}</h1>
+    <p>
+        {% if log.is_check_in %}{{ t.check_in }}{% else %}{{ t.check_out }}{% endif %}
+        {% if log.timestamp %} — {{ log.timestamp|date:"D, M d, Y H:i" }}{% endif %}
+    </p>
+</header>
+
+<a href="javascript:history.back()" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--primary); text-decoration: none; margin-bottom: 1.25rem;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    {{ t.back }}
+</a>
+
+<style>
+    .vld-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .vld-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.25rem; }
+    .vld-card h3 { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 1rem; font-weight: 600; }
+    .vld-field { margin-bottom: 0.85rem; }
+    .vld-field .label { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 2px; }
+    .vld-field .value { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+    .vld-check { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .vld-check .icon { width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .vld-check .icon.yes { background: rgba(52,211,153,0.15); color: #34d399; }
+    .vld-check .icon.no { background: rgba(248,113,113,0.15); color: #f87171; }
+    .vld-stars { display: flex; gap: 2px; }
+    .vld-stars .star { width: 18px; height: 18px; }
+    .vld-stars .star.filled { color: #fbbf24; }
+    .vld-stars .star.empty { color: var(--border); }
+    .vld-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; }
+    .vld-photos img { width: 100%; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; transition: transform 0.2s; }
+    .vld-photos img:hover { transform: scale(1.03); }
+    .vld-text-block { background: var(--bg-hover); border-radius: 8px; padding: 0.85rem; font-size: 0.85rem; line-height: 1.6; color: var(--text-primary); white-space: pre-wrap; }
+    @media (max-width: 768px) { .vld-grid { grid-template-columns: 1fr; } }
+</style>
+
+<!-- Info + Operator -->
+<div class="vld-grid">
+    <div class="vld-card">
+        <h3>{{ t.visit_info }}</h3>
+        <div class="vld-field">
+            <div class="label">{{ t.th_machine_name }}</div>
+            <div class="value">{{ log.machine.name }}</div>
+        </div>
+        <div class="vld-field">
+            <div class="label">{{ t.th_operator }}</div>
+            <div class="value">{% if log.operator %}{{ log.operator.name }}{% else %}-{% endif %}</div>
+        </div>
+        <div class="vld-field">
+            <div class="label">{{ t.type }}</div>
+            <div class="value">
+                {% if log.is_check_in %}
+                <span class="badge badge-success">{{ t.check_in }}</span>
+                {% else %}
+                <span class="badge badge-warning">{{ t.check_out }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="vld-field">
+            <div class="label">{{ t.timestamp }}</div>
+            <div class="value">{% if log.timestamp %}{{ log.timestamp|date:"Y-m-d H:i:s" }}{% else %}-{% endif %}</div>
+        </div>
+        {% if log.arrival_time %}
+        <div class="vld-field">
+            <div class="label">{{ t.arrival_time }}</div>
+            <div class="value">{{ log.arrival_time|date:"Y-m-d H:i:s" }}</div>
+        </div>
+        {% endif %}
+        {% if log.visit_location %}
+        <div class="vld-field">
+            <div class="label">{{ t.location }}</div>
+            <div class="value" style="font-size: 0.8rem;">{{ log.visit_location }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Metrics -->
+    <div class="vld-card">
+        <h3>{{ t.metrics }}</h3>
+        <div class="vld-field">
+            <div class="label">{{ t.th_transactions }}</div>
+            <div class="value" style="font-size: 1.3rem;">{{ log.transactions }}</div>
+        </div>
+        <div class="vld-field">
+            <div class="label">{{ t.th_voids }}</div>
+            <div class="value" style="font-size: 1.3rem; color: {% if log.voids > 0 %}#f87171{% else %}var(--text-primary){% endif %};">{{ log.voids }}</div>
+        </div>
+        <div class="vld-field">
+            <div class="label">{{ t.th_void_pct }}</div>
+            <div class="value">
+                <span class="badge {% if log.void_percentage > 5 %}badge-danger{% elif log.void_percentage > 2 %}badge-warning{% else %}badge-success{% endif %}">
+                    {{ log.void_percentage }}%
+                </span>
+            </div>
+        </div>
+
+        <!-- Ratings -->
+        <div class="vld-field" style="margin-top: 1rem;">
+            <div class="label">{{ t.cleanliness }}</div>
+            <div class="vld-stars">
+                {% for i in "12345" %}
+                <svg class="star {% if forloop.counter <= log.cleanliness_rating %}filled{% else %}empty{% endif %}" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="vld-field">
+            <div class="label">{{ t.satisfaction }}</div>
+            <div class="vld-stars">
+                {% for i in "12345" %}
+                <svg class="star {% if forloop.counter <= log.customer_satisfaction %}filled{% else %}empty{% endif %}" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Checklist -->
+<div class="vld-card" style="margin-bottom: 1.5rem;">
+    <h3>{{ t.checklist }}</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem 2rem;">
+        <div class="vld-check">
+            <div class="icon {% if log.received_keys %}yes{% else %}no{% endif %}">
+                {% if log.received_keys %}✓{% else %}✗{% endif %}
+            </div>
+            {{ t.received_keys }}
+        </div>
+        <div class="vld-check">
+            <div class="icon {% if log.pos_verified %}yes{% else %}no{% endif %}">
+                {% if log.pos_verified %}✓{% else %}✗{% endif %}
+            </div>
+            {{ t.pos_verified }}
+        </div>
+        <div class="vld-check">
+            <div class="icon {% if log.product_review_done %}yes{% else %}no{% endif %}">
+                {% if log.product_review_done %}✓{% else %}✗{% endif %}
+            </div>
+            {{ t.product_review }}
+        </div>
+        <div class="vld-check">
+            <div class="icon {% if log.no_sold_out %}yes{% else %}no{% endif %}">
+                {% if log.no_sold_out %}✓{% else %}✗{% endif %}
+            </div>
+            {{ t.no_sold_out }}
+        </div>
+        <div class="vld-check">
+            <div class="icon {% if log.quantity_review_done %}yes{% else %}no{% endif %}">
+                {% if log.quantity_review_done %}✓{% else %}✗{% endif %}
+            </div>
+            {{ t.quantity_review }}
+        </div>
+        <div class="vld-check">
+            <div class="icon {% if log.expiry_verified %}yes{% else %}no{% endif %}">
+                {% if log.expiry_verified %}✓{% else %}✗{% endif %}
+            </div>
+            {{ t.expiry_verified }}
+        </div>
+    </div>
+</div>
+
+<!-- Stock, Issues, Comments -->
+<div class="vld-grid">
+    {% if log.stock_details %}
+    <div class="vld-card">
+        <h3>{{ t.stock_details }}</h3>
+        <div class="vld-text-block">{{ log.stock_details }}</div>
+    </div>
+    {% endif %}
+
+    {% if log.shipment_info %}
+    <div class="vld-card">
+        <h3>{{ t.shipment_info }}</h3>
+        <div class="vld-text-block">{{ log.shipment_info }}</div>
+    </div>
+    {% endif %}
+
+    {% if log.product_issue %}
+    <div class="vld-card">
+        <h3>{{ t.product_issue }}</h3>
+        <div class="vld-text-block" style="border-left: 3px solid #f87171;">{{ log.product_issue }}</div>
+    </div>
+    {% endif %}
+
+    {% if log.machine_issue %}
+    <div class="vld-card">
+        <h3>{{ t.machine_issue }}</h3>
+        <div class="vld-text-block" style="border-left: 3px solid #fbbf24;">{{ log.machine_issue }}</div>
+    </div>
+    {% endif %}
+
+    {% if log.comments %}
+    <div class="vld-card">
+        <h3>{{ t.th_comments }}</h3>
+        <div class="vld-text-block">{{ log.comments }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Photos -->
+{% if images %}
+<div class="vld-card" style="margin-top: 1.5rem;">
+    <h3>{{ t.photos }} ({{ images|length }})</h3>
+    <div class="vld-photos">
+        {% for img in images %}
+        <a href="{{ img.image.url }}" target="_blank">
+            <img src="{{ img.image.url }}" alt="Visit photo {{ forloop.counter }}" loading="lazy">
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

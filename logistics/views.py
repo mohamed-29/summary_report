@@ -1246,6 +1246,21 @@ Reply with ONLY the report text."""
     return redirect('logistics:operator_list')
 
 
+@login_required
+def visit_log_detail(request, log_id):
+    """Show full details of a single visit log entry."""
+    from .models import VisitLogImage
+    log = get_object_or_404(VisitLog.objects.select_related('operator', 'machine'), pk=log_id)
+    images = log.images.all()
+    t = get_translations(request)
+    context = {
+        'log': log,
+        'images': images,
+        't': t,
+    }
+    return render(request, 'logistics/visit_log_detail.html', context)
+
+
 # ===================================================================
 # Phase 9: Operator Frontend - Login, Visit Form, Logout
 # ===================================================================
@@ -1998,9 +2013,19 @@ def supervisor_dashboard(request):
         car_log = car_map.get(op.id)
         review = review_map.get(op.id)
 
-        machines_visited = [v.machine.name for v in visits] if visits else []
+        # Build machines with visit log IDs for linking
+        machines_visited = []
+        seen_ids = set()
+        if visits:
+            for v in visits:
+                if v.machine and v.machine.id not in seen_ids:
+                    seen_ids.add(v.machine.id)
+                    machines_visited.append({'name': v.machine.name, 'visit_log_id': v.id})
         if car_log:
-            machines_visited += [s.machine.name for s in car_log.stops.all()]
+            for s in car_log.stops.all():
+                if s.machine and s.machine.id not in seen_ids:
+                    seen_ids.add(s.machine.id)
+                    machines_visited.append({'name': s.machine.name, 'visit_log_id': None})
 
         comments = [v.comments for v in visits if v.comments and v.comments.strip()]
 
