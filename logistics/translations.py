@@ -152,6 +152,11 @@ TRANSLATIONS = {
         'sat': 'Sat',
         'no_comments_today': 'No comments today',
         'no_operators_found': 'No operators found.',
+        'generate_ai_report': 'Generate AI Report',
+        'generating_report': 'Generating Report...',
+        'ai_operator_report': 'AI Operator Report',
+        'report_generated_at': 'Generated at',
+        'no_report_yet': 'Click "Generate AI Report" to create a daily performance summary.',
 
         # ── Daily Machine Summary ──
         'daily_machine_summary': 'Daily Machine Summary',
@@ -462,6 +467,11 @@ TRANSLATIONS = {
         'sat': 'رضا',
         'no_comments_today': 'لا توجد تعليقات اليوم',
         'no_operators_found': 'لم يتم العثور على مشغلين.',
+        'generate_ai_report': 'إنشاء تقرير AI',
+        'generating_report': 'جاري إنشاء التقرير...',
+        'ai_operator_report': 'تقرير AI للمشغلين',
+        'report_generated_at': 'تم الإنشاء في',
+        'no_report_yet': 'اضغط "إنشاء تقرير AI" لإنشاء ملخص الأداء اليومي.',
 
         # ── Daily Machine Summary ──
         'daily_machine_summary': 'الملخص اليومي للماكينات',

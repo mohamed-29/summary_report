@@ -12,6 +12,7 @@ urlpatterns = [
     path('upload/car/', views.upload_car_logs, name='upload_car'),
     path('operator/<int:operator_id>/', views.operator_detail, name='operator_detail'),
     path('operators/', views.operator_list, name='operator_list'),
+    path('operators/generate-report/', views.generate_operator_report, name='generate_operator_report'),
     path('visit-log/<int:log_id>/download/', views.download_visit_log, name='download_visit_log'),
     path('daily-summary/', views.daily_machine_summary, name='daily_machine_summary'),
     # Operator Frontend (Phase 9)

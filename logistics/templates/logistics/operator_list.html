@@ -24,7 +24,28 @@
             {% endfor %}
         </select>
     </form>
+
+    {% if has_ai_key %}
+    <form method="post" action="{% url 'logistics:generate_operator_report' %}" id="aiReportForm">
+        {% csrf_token %}
+        <button type="submit" class="primary" id="aiReportBtn" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            {{ t.generate_ai_report }}
+        </button>
+    </form>
+    {% endif %}
 </div>
+
+<!-- AI Report Loading Overlay -->
+<div id="aiReportOverlay"
+    style="display:none; position:fixed; inset:0; background:rgba(10,14,23,0.92); backdrop-filter:blur(8px); z-index:9999; justify-content:center; align-items:center;">
+    <div style="text-align:center; color:white;">
+        <div style="width:44px; height:44px; border:3px solid rgba(34,211,238,0.15); border-top:3px solid var(--primary); border-radius:50%; animation:aiSpin 0.8s linear infinite; margin:0 auto 1.5rem;"></div>
+        <div style="font-size:1.1rem; font-weight:700; margin-bottom:0.35rem;">{{ t.generating_report }}</div>
+        <div id="aiReportTimer" style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted); margin-top:1rem;">0:00</div>
+    </div>
+</div>
+<style>@keyframes aiSpin { to { transform: rotate(360deg); } }</style>
 
 <!-- Summary Stats -->
 <div class="stats-grid" style="margin-bottom: 1.25rem;">
@@ -113,6 +134,40 @@
                     <img src="{{ img.image.url }}" style="width: 100%; height: 100%; object-fit: cover;">
                 </a>
                 {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- AI Operator Report Card -->
+{% if has_ai_key %}
+<div class="report-summary-card" style="margin-bottom: 1.25rem;">
+    <div class="report-summary-header" onclick="toggleAiReport()">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <div style="width: 32px; height: 32px; background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(34,211,238,0.15)); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
+            <div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">{{ t.ai_operator_report }}</div>
+                {% if ai_report_time %}
+                <div style="font-size: 0.72rem; color: var(--text-secondary);">{{ t.report_generated_at }} {{ ai_report_time }}</div>
+                {% else %}
+                <div style="font-size: 0.72rem; color: var(--text-secondary);">{{ t.no_report_yet }}</div>
+                {% endif %}
+            </div>
+        </div>
+        <svg class="report-chevron" id="aiReportChevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="report-summary-body {% if ai_operator_report %}open{% endif %}" id="aiReportBody">
+        <div class="report-summary-content">
+            {% if ai_operator_report %}
+            <div style="font-size: 0.88rem; line-height: 1.65; color: var(--text-primary); white-space: pre-wrap;">{{ ai_operator_report }}</div>
+            {% else %}
+            <div style="text-align: center; padding: 1.5rem 0; color: var(--text-secondary);">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 0.5rem; opacity: 0.4;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                <div style="font-size: 0.82rem;">{{ t.no_report_yet }}</div>
             </div>
             {% endif %}
         </div>
@@ -402,7 +457,44 @@ function toggleReportSummary() {
     }
 }
 
+function toggleAiReport() {
+    var body = document.getElementById('aiReportBody');
+    var chevron = document.getElementById('aiReportChevron');
+    if (body && chevron) {
+        body.classList.toggle('open');
+        chevron.classList.toggle('open');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // AI Report form handler — show loading overlay
+    var aiForm = document.getElementById('aiReportForm');
+    if (aiForm) {
+        aiForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var overlay = document.getElementById('aiReportOverlay');
+            overlay.style.display = 'flex';
+            var btn = document.getElementById('aiReportBtn');
+            btn.disabled = true;
+            var seconds = 0;
+            var timerEl = document.getElementById('aiReportTimer');
+            var timerInterval = setInterval(function() {
+                seconds++;
+                var m = Math.floor(seconds / 60);
+                var s = seconds % 60;
+                timerEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+            }, 1000);
+            var formData = new FormData(aiForm);
+            fetch(aiForm.action, { method: 'POST', body: formData, redirect: 'follow' })
+                .then(function() {
+                    clearInterval(timerInterval);
+                    window.location.href = '{% url "logistics:operator_list" %}';
+                }).catch(function() {
+                    clearInterval(timerInterval);
+                    window.location.href = '{% url "logistics:operator_list" %}';
+                });
+        });
+    }
     // Compute summary stats
     var rows = document.querySelectorAll('#opTable tbody tr[data-type]');
     var total = 0, active = 0, drivers = 0, operators = 0;

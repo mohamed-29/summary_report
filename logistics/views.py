@@ -124,6 +124,12 @@ def dashboard(request):
     if summary_data and bool(getattr(settings, 'OPENROUTER_API_KEY', '')):
         fleet_summary = request.session.get(fleet_cache_key, '')
 
+    # Get cached AI operator report from session
+    today = date.today()
+    ai_report_cache_key = f'ai_operator_report_{today.isoformat()}'
+    ai_operator_report = request.session.get(ai_report_cache_key, '')
+    ai_report_time = request.session.get(f'{ai_report_cache_key}_time', '')
+
     context = {
         'summary_data': summary_data,
         'grand_totals': grand_totals,
@@ -131,6 +137,8 @@ def dashboard(request):
         'available_months': available_months,
         'has_ai_key': bool(getattr(settings, 'OPENROUTER_API_KEY', '')),
         'fleet_summary': fleet_summary,
+        'ai_operator_report': ai_operator_report,
+        'ai_report_time': ai_report_time,
     }
 
     return render(request, 'logistics/dashboard.html', context)
@@ -1106,13 +1114,136 @@ def operator_list(request):
         .first()
     )
 
+    # Get cached AI operator report from session
+    ai_report_cache_key = f'ai_operator_report_{today.isoformat()}'
+    ai_operator_report = request.session.get(ai_report_cache_key, '')
+    ai_report_time = request.session.get(f'{ai_report_cache_key}_time', '')
+    has_ai_key = bool(getattr(settings, 'OPENROUTER_API_KEY', ''))
+
     context = {
         'operators': operators,
         'selected_month': selected_month,
         'available_months': available_months,
         'today_report': today_report,
+        'ai_operator_report': ai_operator_report,
+        'ai_report_time': ai_report_time,
+        'has_ai_key': has_ai_key,
     }
     return render(request, 'logistics/operator_list.html', context)
+
+
+@require_POST
+@login_required
+def generate_operator_report(request):
+    """Generate an AI performance report for all operators based on today's data."""
+    from .utils import get_openrouter_client, openrouter_generate
+    from .models import CarLog, OperatorDailyRating, SupervisorDailyReport
+
+    today = date.today()
+
+    # Check if OpenRouter is configured
+    api_key = getattr(settings, 'OPENROUTER_API_KEY', '')
+    if not api_key:
+        messages.error(request, 'OpenRouter API key not configured.')
+        return redirect('logistics:operator_list')
+
+    client = get_openrouter_client()
+    if not client:
+        messages.error(request, 'Failed to initialize OpenRouter client.')
+        return redirect('logistics:operator_list')
+
+    # Gather today's data
+    todays_visits = VisitLog.objects.filter(
+        timestamp__year=today.year,
+        timestamp__month=today.month,
+        timestamp__day=today.day,
+        is_completed=True
+    ).select_related('operator', 'machine')
+
+    operators = Operator.objects.filter(is_active=True).order_by('name')
+
+    # Build operator summaries
+    operator_lines = []
+    for op in operators:
+        op_visits = [v for v in todays_visits if v.operator_id == op.id]
+        if not op_visits and not op.is_driver:
+            operator_lines.append(f"- {op.name} ({'Driver' if op.is_driver else 'Operator'}): No activity today")
+            continue
+
+        machines = list(set(v.machine.name for v in op_visits if v.machine))
+        check_ins = [v for v in op_visits if v.is_check_in]
+        check_outs = [v for v in op_visits if not v.is_check_in]
+        comments = [v.comments for v in op_visits if v.comments and v.comments.strip()]
+        issues = []
+        for v in op_visits:
+            if v.machine_issue and v.machine_issue.strip():
+                issues.append(f"Machine: {v.machine_issue.strip()[:80]}")
+            if v.product_issue and v.product_issue.strip():
+                issues.append(f"Product: {v.product_issue.strip()[:80]}")
+
+        cleanliness_vals = [v.cleanliness_rating for v in op_visits if v.cleanliness_rating]
+        satisfaction_vals = [v.customer_satisfaction for v in op_visits if v.customer_satisfaction]
+        avg_clean = round(sum(cleanliness_vals) / len(cleanliness_vals), 1) if cleanliness_vals else 'N/A'
+        avg_sat = round(sum(satisfaction_vals) / len(satisfaction_vals), 1) if satisfaction_vals else 'N/A'
+
+        line = f"- {op.name} ({'Driver' if op.is_driver else 'Operator'}): {len(check_ins)} check-ins, {len(check_outs)} check-outs, Machines: {', '.join(machines[:5]) if machines else 'None'}"
+        line += f", Cleanliness: {avg_clean}/5, Satisfaction: {avg_sat}/5"
+        if issues:
+            line += f", Issues: {'; '.join(issues[:3])}"
+        if comments:
+            line += f", Comments: {'; '.join(c[:60] for c in comments[:3])}"
+        operator_lines.append(line)
+
+    # Supervisor report data
+    sup_report = SupervisorDailyReport.objects.filter(date=today).first()
+    sup_section = "No supervisor report submitted today."
+    if sup_report:
+        sup_section = f"Supervisor: {sup_report.supervisor.name}\n"
+        if sup_report.general_comments:
+            sup_section += f"  Comments: {sup_report.general_comments[:200]}\n"
+        if sup_report.general_issues:
+            sup_section += f"  Issues: {sup_report.general_issues[:200]}\n"
+        if sup_report.reported_issues:
+            sup_section += f"  Reported Issues: {sup_report.reported_issues[:200]}\n"
+
+    total_ops = operators.count()
+    active_ops = len(set(v.operator_id for v in todays_visits if v.operator_id))
+
+    prompt = f"""You are an operations manager assistant for a vending machine company.
+Generate a daily performance report for today ({today.strftime('%A, %B %d, %Y')}) based on operator activity data.
+
+Team Overview:
+- Total operators/drivers: {total_ops}
+- Active today: {active_ops}
+- Attendance rate: {round(active_ops / total_ops * 100) if total_ops > 0 else 0}%
+
+Operator Activity:
+{chr(10).join(operator_lines)}
+
+Supervisor Report:
+{sup_section}
+
+Instructions:
+1. Start with a brief overall assessment of today's team performance
+2. Highlight top performers (most visits, good ratings)
+3. Flag concerns (inactive operators, issues reported, low ratings)
+4. Note any patterns or recommendations
+5. Keep it concise (5-8 sentences), professional, and actionable
+6. Use Arabic if operator names are in Arabic
+
+Reply with ONLY the report text."""
+
+    try:
+        report_text = openrouter_generate(client, prompt)
+        # Cache in session
+        cache_key = f'ai_operator_report_{today.isoformat()}'
+        request.session[cache_key] = report_text
+        request.session[f'{cache_key}_time'] = datetime.now().strftime('%H:%M')
+        messages.success(request, 'AI report generated successfully.')
+    except Exception as e:
+        messages.error(request, f'Failed to generate report: {str(e)[:100]}')
+
+    return redirect('logistics:operator_list')
 
 
 # ===================================================================
