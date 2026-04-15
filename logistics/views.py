@@ -1096,10 +1096,21 @@ def operator_list(request):
             op.status_time = None
             op.time_spent = None
 
+    # Fetch today's supervisor report summary (if any)
+    from .models import SupervisorDailyReport
+    today_report = (
+        SupervisorDailyReport.objects
+        .filter(date=today)
+        .select_related('supervisor')
+        .prefetch_related('operator_reviews__operator', 'images')
+        .first()
+    )
+
     context = {
         'operators': operators,
         'selected_month': selected_month,
         'available_months': available_months,
+        'today_report': today_report,
     }
     return render(request, 'logistics/operator_list.html', context)
 

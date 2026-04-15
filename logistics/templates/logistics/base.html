@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="{{ t.lang_code }}" dir="{{ t.dir }}">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Ops Command{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
     {% block extra_head %}{% endblock %}
     <style>
@@ -35,7 +38,7 @@
             --bg-hover: #1c2740;
             --bg-elevated: #1e293b;
             --border: #1e2d45;
-            --border-subtle: rgba(255,255,255,0.04);
+            --border-subtle: rgba(255, 255, 255, 0.04);
 
             --text-primary: #e2e8f0;
             --text-secondary: #64748b;
@@ -55,7 +58,13 @@
         /* ═══════════════════════════════════════════════
            RESET & BASE
            ═══════════════════════════════════════════════ */
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: var(--font-display);
@@ -74,13 +83,11 @@
             inset: 0;
             pointer-events: none;
             z-index: 9999;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0,0,0,0.015) 2px,
-                rgba(0,0,0,0.015) 4px
-            );
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.015) 2px,
+                    rgba(0, 0, 0, 0.015) 4px);
         }
 
         /* ═══════════════════════════════════════════════
@@ -107,15 +114,45 @@
         }
 
         /* RTL overrides */
-        [dir="rtl"] .sidebar { left: auto; right: 0; border-right: none; border-left: 1px solid var(--border); }
-        [dir="rtl"] .main-content { margin-left: 0; margin-right: var(--sidebar-w); }
-        [dir="rtl"] .sidebar-link.active::before { left: auto; right: 0; border-radius: 3px 0 0 3px; }
-        [dir="rtl"] .message { border-left: none; border-right: 3px solid; }
-        [dir="rtl"] .data-table th { text-align: right; }
+        [dir="rtl"] .sidebar {
+            left: auto;
+            right: 0;
+            border-right: none;
+            border-left: 1px solid var(--border);
+        }
+
+        [dir="rtl"] .main-content {
+            margin-left: 0;
+            margin-right: var(--sidebar-w);
+        }
+
+        [dir="rtl"] .sidebar-link.active::before {
+            left: auto;
+            right: 0;
+            border-radius: 3px 0 0 3px;
+        }
+
+        [dir="rtl"] .message {
+            border-left: none;
+            border-right: 3px solid;
+        }
+
+        [dir="rtl"] .data-table th {
+            text-align: right;
+        }
+
         @media (max-width: 1024px) {
-            [dir="rtl"] .sidebar { transform: translateX(100%); }
-            [dir="rtl"] .sidebar.open { transform: translateX(0); }
-            [dir="rtl"] .main-content { margin-right: 0; }
+            [dir="rtl"] .sidebar {
+                transform: translateX(100%);
+            }
+
+            [dir="rtl"] .sidebar.open {
+                transform: translateX(0);
+            }
+
+            [dir="rtl"] .main-content {
+                margin-right: 0;
+            }
         }
 
         .sidebar-brand {
@@ -279,7 +316,7 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0, 0, 0, 0.6);
             z-index: 99;
             backdrop-filter: blur(4px);
         }
@@ -355,7 +392,7 @@
 
         .controls select:hover,
         .controls input:hover {
-            border-color: rgba(34,211,238,0.3);
+            border-color: rgba(34, 211, 238, 0.3);
         }
 
         .controls select:focus,
@@ -372,7 +409,7 @@
         }
 
         .controls button,
-        .controls a > button,
+        .controls a>button,
         button.btn {
             padding: 0.55rem 1.1rem;
             border-radius: var(--radius-sm);
@@ -388,10 +425,10 @@
         }
 
         .controls button:hover,
-        .controls a > button:hover,
+        .controls a>button:hover,
         button.btn:hover {
             background: var(--bg-hover);
-            border-color: rgba(34,211,238,0.3);
+            border-color: rgba(34, 211, 238, 0.3);
             color: var(--primary);
         }
 
@@ -430,7 +467,7 @@
         }
 
         .stat-card:hover {
-            border-color: rgba(255,255,255,0.08);
+            border-color: rgba(255, 255, 255, 0.08);
             transform: translateY(-1px);
         }
 
@@ -454,17 +491,59 @@
         }
 
         /* Colored stat cards — glow bar at top */
-        .stat-card.success { border-color: rgba(52,211,153,0.2); }
-        .stat-card.success .value { color: var(--success); }
-        .stat-card.success::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--success); }
+        .stat-card.success {
+            border-color: rgba(52, 211, 153, 0.2);
+        }
 
-        .stat-card.warning { border-color: rgba(251,191,36,0.2); }
-        .stat-card.warning .value { color: var(--warning); }
-        .stat-card.warning::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--warning); }
+        .stat-card.success .value {
+            color: var(--success);
+        }
 
-        .stat-card.danger { border-color: rgba(248,113,113,0.2); }
-        .stat-card.danger .value { color: var(--danger); }
-        .stat-card.danger::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--danger); }
+        .stat-card.success::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--success);
+        }
+
+        .stat-card.warning {
+            border-color: rgba(251, 191, 36, 0.2);
+        }
+
+        .stat-card.warning .value {
+            color: var(--warning);
+        }
+
+        .stat-card.warning::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--warning);
+        }
+
+        .stat-card.danger {
+            border-color: rgba(248, 113, 113, 0.2);
+        }
+
+        .stat-card.danger .value {
+            color: var(--danger);
+        }
+
+        .stat-card.danger::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--danger);
+        }
 
         /* ═══════════════════════════════════════════════
            DATA TABLE
@@ -545,10 +624,25 @@
             white-space: nowrap;
         }
 
-        .badge-success { background: var(--success-dim); color: var(--success); }
-        .badge-warning { background: var(--warning-dim); color: var(--warning); }
-        .badge-danger  { background: var(--danger-dim); color: var(--danger); }
-        .badge-info    { background: var(--info-dim); color: var(--info); }
+        .badge-success {
+            background: var(--success-dim);
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background: var(--warning-dim);
+            color: var(--warning);
+        }
+
+        .badge-danger {
+            background: var(--danger-dim);
+            color: var(--danger);
+        }
+
+        .badge-info {
+            background: var(--info-dim);
+            color: var(--info);
+        }
 
         /* ═══════════════════════════════════════════════
            OP STATUS BADGES (operator list)
@@ -567,19 +661,19 @@
 
         .op-status-badge.checked-in {
             background: var(--success-dim);
-            border: 1px solid rgba(52,211,153,0.25);
+            border: 1px solid rgba(52, 211, 153, 0.25);
             color: var(--success);
         }
 
         .op-status-badge.checked-out {
             background: var(--info-dim);
-            border: 1px solid rgba(129,140,248,0.25);
+            border: 1px solid rgba(129, 140, 248, 0.25);
             color: var(--info);
         }
 
         .op-status-badge.in-progress {
             background: var(--warning-dim);
-            border: 1px solid rgba(251,191,36,0.25);
+            border: 1px solid rgba(251, 191, 36, 0.25);
             color: var(--warning);
         }
 
@@ -599,14 +693,14 @@
             font-weight: 600;
             background: var(--primary-dim);
             color: var(--primary);
-            border: 1px solid rgba(34,211,238,0.2);
+            border: 1px solid rgba(34, 211, 238, 0.2);
             border-radius: var(--radius-sm);
             cursor: pointer;
             transition: all 0.15s;
         }
 
         button.small:hover {
-            background: rgba(34,211,238,0.2);
+            background: rgba(34, 211, 238, 0.2);
             border-color: var(--primary);
         }
 
@@ -766,7 +860,9 @@
         /* ═══════════════════════════════════════════════
            FORMS (general)
            ═══════════════════════════════════════════════ */
-        input, select, textarea {
+        input,
+        select,
+        textarea {
             font-family: var(--font-display);
         }
 
@@ -785,24 +881,54 @@
            STAGGER ANIMATION
            ═══════════════════════════════════════════════ */
         @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .stats-grid > *,
+        .stats-grid>*,
         .data-table,
         header {
             animation: fadeSlideUp 0.4s ease-out both;
         }
 
-        header { animation-delay: 0.05s; }
-        .stats-grid > *:nth-child(1) { animation-delay: 0.08s; }
-        .stats-grid > *:nth-child(2) { animation-delay: 0.12s; }
-        .stats-grid > *:nth-child(3) { animation-delay: 0.16s; }
-        .stats-grid > *:nth-child(4) { animation-delay: 0.20s; }
-        .stats-grid > *:nth-child(5) { animation-delay: 0.24s; }
-        .stats-grid > *:nth-child(6) { animation-delay: 0.28s; }
-        .data-table { animation-delay: 0.25s; }
+        header {
+            animation-delay: 0.05s;
+        }
+
+        .stats-grid>*:nth-child(1) {
+            animation-delay: 0.08s;
+        }
+
+        .stats-grid>*:nth-child(2) {
+            animation-delay: 0.12s;
+        }
+
+        .stats-grid>*:nth-child(3) {
+            animation-delay: 0.16s;
+        }
+
+        .stats-grid>*:nth-child(4) {
+            animation-delay: 0.20s;
+        }
+
+        .stats-grid>*:nth-child(5) {
+            animation-delay: 0.24s;
+        }
+
+        .stats-grid>*:nth-child(6) {
+            animation-delay: 0.28s;
+        }
+
+        .data-table {
+            animation-delay: 0.25s;
+        }
 
         /* ═══════════════════════════════════════════════
            RESPONSIVE
@@ -883,13 +1009,17 @@
         }
     </style>
 </head>
+
 <body>
     <div class="layout">
         <!-- ═══ SIDEBAR ═══ -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand">
                 <div class="sidebar-brand-icon">
-                    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm3-6c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3 3 1.34 3 3z"/></svg>
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm3-6c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3 3 1.34 3 3z" />
+                    </svg>
                 </div>
                 <div class="sidebar-brand-text">
                     <strong>{{ t.brand_name }}</strong>
@@ -903,59 +1033,110 @@
                     <input type="text" id="sidebarSearch" placeholder="{{ t.search_pages }}"
                         style="width: 100%; padding: 0.5rem 0.75rem 0.5rem 2rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-base); color: var(--text-primary); font-size: 0.78rem; font-family: var(--font-display);"
                         autocomplete="off">
-                    <svg style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; opacity: 0.4;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <svg style="position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; opacity: 0.4;"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
                 </div>
             </div>
 
             <nav class="sidebar-nav">
                 <div class="sidebar-section-label">{{ t.nav_analytics }}</div>
                 <a href="{% url 'logistics:dashboard' %}" class="sidebar-link {% block nav_dashboard %}{% endblock %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                    </svg>
                     {{ t.nav_dashboard }}
                 </a>
-                <a href="{% url 'logistics:daily_machine_summary' %}?date={% now 'Y-m-d' %}" class="sidebar-link {% block nav_daily %}{% endblock %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <a href="{% url 'logistics:daily_machine_summary' %}?date={% now 'Y-m-d' %}"
+                    class="sidebar-link {% block nav_daily %}{% endblock %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
                     {{ t.nav_daily_summary }}
                 </a>
 
                 <div class="sidebar-section-label">{{ t.nav_team }}</div>
-                <a href="{% url 'logistics:operator_list' %}" class="sidebar-link {% block nav_operators %}{% endblock %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <a href="{% url 'logistics:operator_list' %}"
+                    class="sidebar-link {% block nav_operators %}{% endblock %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
                     {{ t.nav_operators }}
                 </a>
 
                 <div class="sidebar-section-label">{{ t.nav_supervisor }}</div>
-                <a href="{% url 'logistics:supervisor_login' %}" class="sidebar-link {% block nav_supervisor %}{% endblock %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <a href="{% url 'logistics:supervisor_login' %}"
+                    class="sidebar-link {% block nav_supervisor %}{% endblock %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
                     {{ t.nav_supervisor_portal }}
                 </a>
 
                 {% if user.is_superuser %}
                 <div class="sidebar-section-label">{{ t.nav_admin }}</div>
                 <a href="{% url 'admin:index' %}" class="sidebar-link">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
                     {{ t.nav_admin_panel }}
                 </a>
                 {% endif %}
             </nav>
 
-            {% if user.is_authenticated %}
             <div class="sidebar-footer">
-                <div style="padding: 0.4rem 0.75rem 0.6rem; display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                    <svg style="width: 14px; height: 14px; opacity: 0.4; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    <span id="liveClock" style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.05em;"></span>
+                <div
+                    style="padding: 0.4rem 0.75rem 0.6rem; display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <svg style="width: 14px; height: 14px; opacity: 0.4; flex-shrink: 0;" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span id="liveClock"
+                        style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.05em;"></span>
                 </div>
                 <!-- Language Toggle -->
-                <a href="{% url 'logistics:set_language' %}?lang={% if lang == 'ar' %}en{% else %}ar{% endif %}" class="sidebar-link" style="color: var(--primary);">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <a href="{% url 'logistics:set_language' %}?lang={% if lang == 'ar' %}en{% else %}ar{% endif %}"
+                    class="sidebar-link" style="color: var(--primary);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" style="width:16px;height:16px;">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="2" y1="12" x2="22" y2="12" />
+                        <path
+                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                    </svg>
                     {% if lang == 'ar' %}English{% else %}العربية{% endif %}
                 </a>
+                {% if user.is_authenticated %}
                 <a href="{% url 'logistics:dashboard_logout' %}" class="sidebar-link" style="color: var(--danger);">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
                     {{ t.logout }}
                 </a>
+                {% endif %}
             </div>
-            {% endif %}
         </aside>
 
         <!-- ═══ SIDEBAR BACKDROP (mobile) ═══ -->
@@ -966,7 +1147,11 @@
             <!-- Mobile top bar -->
             <div class="mobile-topbar">
                 <button class="mobile-menu-btn" onclick="toggleSidebar()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <line x1="3" y1="12" x2="21" y2="12" />
+                        <line x1="3" y1="18" x2="21" y2="18" />
+                    </svg>
                 </button>
                 <span style="font-weight: 700; font-size: 0.9rem;">{{ t.brand_name }}</span>
                 <div style="width: 36px;"></div>
@@ -990,8 +1175,8 @@
         }
 
         // Close sidebar on nav click (mobile)
-        document.querySelectorAll('.sidebar-link').forEach(function(link) {
-            link.addEventListener('click', function() {
+        document.querySelectorAll('.sidebar-link').forEach(function (link) {
+            link.addEventListener('click', function () {
                 if (window.innerWidth <= 1024) closeSidebar();
             });
         });
@@ -1001,26 +1186,26 @@
             var el = document.getElementById('liveClock');
             if (el) {
                 var now = new Date();
-                var days = ['{{ t.day_sun }}','{{ t.day_mon }}','{{ t.day_tue }}','{{ t.day_wed }}','{{ t.day_thu }}','{{ t.day_fri }}','{{ t.day_sat }}'];
+                var days = ['{{ t.day_sun }}', '{{ t.day_mon }}', '{{ t.day_tue }}', '{{ t.day_wed }}', '{{ t.day_thu }}', '{{ t.day_fri }}', '{{ t.day_sat }}'];
                 el.textContent = days[now.getDay()] + ' ' +
-                    String(now.getHours()).padStart(2,'0') + ':' +
-                    String(now.getMinutes()).padStart(2,'0') + ':' +
-                    String(now.getSeconds()).padStart(2,'0');
+                    String(now.getHours()).padStart(2, '0') + ':' +
+                    String(now.getMinutes()).padStart(2, '0') + ':' +
+                    String(now.getSeconds()).padStart(2, '0');
             }
             setTimeout(updateClock, 1000);
         })();
 
         // Sidebar Search — filter nav links
-        (function() {
+        (function () {
             var input = document.getElementById('sidebarSearch');
             if (!input) return;
-            input.addEventListener('input', function() {
+            input.addEventListener('input', function () {
                 var q = this.value.toLowerCase().trim();
-                document.querySelectorAll('.sidebar-link').forEach(function(link) {
+                document.querySelectorAll('.sidebar-link').forEach(function (link) {
                     var text = link.textContent.toLowerCase();
                     link.style.display = (!q || text.indexOf(q) !== -1) ? '' : 'none';
                 });
-                document.querySelectorAll('.sidebar-section-label').forEach(function(label) {
+                document.querySelectorAll('.sidebar-section-label').forEach(function (label) {
                     if (!q) { label.style.display = ''; return; }
                     var next = label.nextElementSibling;
                     var hasVisible = false;
@@ -1034,15 +1219,15 @@
         })();
 
         // Global table search utility — usage: initTableSearch('inputId', 'tableId')
-        window.initTableSearch = function(inputId, tableId) {
+        window.initTableSearch = function (inputId, tableId) {
             var input = document.getElementById(inputId);
             var table = document.getElementById(tableId);
             if (!input || !table) return;
-            input.addEventListener('input', function() {
+            input.addEventListener('input', function () {
                 var q = this.value.toLowerCase().trim();
                 var rows = table.querySelectorAll('tbody tr');
                 var visibleCount = 0;
-                rows.forEach(function(row) {
+                rows.forEach(function (row) {
                     if (row.classList.contains('photo-row')) { row.style.display = 'none'; return; }
                     var text = row.textContent.toLowerCase();
                     var show = !q || text.indexOf(q) !== -1;
@@ -1060,4 +1245,5 @@
     </script>
     {% block extra_js %}{% endblock %}
 </body>
+
 </html>

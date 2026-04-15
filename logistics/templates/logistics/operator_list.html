@@ -46,6 +46,80 @@
     </div>
 </div>
 
+<!-- Today's Report Summary (expandable) -->
+{% if today_report %}
+<div class="report-summary-card" style="margin-bottom: 1.25rem;">
+    <div class="report-summary-header" id="reportSummaryToggle" onclick="toggleReportSummary()">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <div style="width: 32px; height: 32px; background: var(--primary-dim); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">{{ t.todays_report_summary }}</div>
+                <div style="font-size: 0.72rem; color: var(--text-secondary);">{{ today_report.supervisor.name }} &bull; {% now "M d, Y" %}</div>
+            </div>
+        </div>
+        <svg class="report-chevron" id="reportChevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="report-summary-body" id="reportSummaryBody">
+        <div class="report-summary-content">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                {% if today_report.general_comments %}
+                <div class="report-field-card">
+                    <div class="report-field-label">{{ t.general_comments }}</div>
+                    <div class="report-field-value">{{ today_report.general_comments }}</div>
+                </div>
+                {% endif %}
+                {% if today_report.general_issues %}
+                <div class="report-field-card" style="border-left: 3px solid var(--danger);">
+                    <div class="report-field-label" style="color: var(--danger);">{{ t.general_issues }}</div>
+                    <div class="report-field-value" style="color: var(--danger);">{{ today_report.general_issues }}</div>
+                </div>
+                {% endif %}
+                {% if today_report.reported_issues %}
+                <div class="report-field-card" style="border-left: 3px solid var(--warning);">
+                    <div class="report-field-label" style="color: var(--warning);">{{ t.reported_issues }}</div>
+                    <div class="report-field-value" style="color: var(--warning);">{{ today_report.reported_issues }}</div>
+                </div>
+                {% endif %}
+            </div>
+            {% if today_report.operator_reviews.all %}
+            <div style="margin-bottom: 1rem;">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; font-weight: 600;">{{ t.operator_reviews }}</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    {% for rev in today_report.operator_reviews.all %}
+                    <div class="review-chip {% if rev.attended %}attended{% else %}absent{% endif %}">
+                        <span style="font-weight: 600;">{{ rev.operator.name }}</span>
+                        {% if rev.attended %}
+                        <span class="badge badge-success" style="font-size: 0.6rem; padding: 1px 5px;">{{ t.attended }}</span>
+                        {% else %}
+                        <span class="badge badge-danger" style="font-size: 0.6rem; padding: 1px 5px;">{{ t.absent }}</span>
+                        {% endif %}
+                        {% if rev.rating > 0 %}
+                        <span style="font-size: 0.72rem; color: var(--text-secondary);">{{ rev.rating }}/10</span>
+                        {% endif %}
+                        {% if rev.comments %}
+                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; width: 100%;">{{ rev.comments|truncatewords:12 }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% if today_report.images.all %}
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                {% for img in today_report.images.all %}
+                <a href="{{ img.image.url }}" target="_blank" style="width: 72px; height: 72px; border-radius: 8px; overflow: hidden; border: 2px solid var(--border); display: block; transition: transform 0.15s;">
+                    <img src="{{ img.image.url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Search & Filter Bar -->
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
     <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
@@ -234,11 +308,100 @@
         border-radius: 3px;
         transition: width 0.3s;
     }
+
+    /* Report Summary Card */
+    .report-summary-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        overflow: hidden;
+        transition: box-shadow 0.2s;
+    }
+    .report-summary-card:hover {
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .report-summary-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.85rem 1.25rem;
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.15s;
+    }
+    .report-summary-header:hover {
+        background: var(--bg-hover);
+    }
+    .report-chevron {
+        transition: transform 0.25s ease;
+    }
+    .report-chevron.open {
+        transform: rotate(180deg);
+    }
+    .report-summary-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.35s ease;
+    }
+    .report-summary-body.open {
+        max-height: 800px;
+    }
+    .report-summary-content {
+        padding: 0 1.25rem 1.25rem 1.25rem;
+        border-top: 1px solid var(--border);
+        padding-top: 1rem;
+    }
+    .report-field-card {
+        background: var(--bg-hover);
+        border-radius: 8px;
+        padding: 0.75rem;
+        border-left: 3px solid var(--primary);
+    }
+    .report-field-label {
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.3rem;
+        font-weight: 600;
+    }
+    .report-field-value {
+        font-size: 0.85rem;
+        color: var(--text-primary);
+        line-height: 1.4;
+    }
+    .review-chip {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 5px;
+        background: var(--bg-hover);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.4rem 0.65rem;
+        font-size: 0.78rem;
+        min-width: 140px;
+    }
+    .review-chip.attended {
+        border-color: rgba(16,185,129,0.2);
+    }
+    .review-chip.absent {
+        border-color: rgba(239,68,68,0.2);
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+function toggleReportSummary() {
+    var body = document.getElementById('reportSummaryBody');
+    var chevron = document.getElementById('reportChevron');
+    if (body && chevron) {
+        body.classList.toggle('open');
+        chevron.classList.toggle('open');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Compute summary stats
     var rows = document.querySelectorAll('#opTable tbody tr[data-type]');
