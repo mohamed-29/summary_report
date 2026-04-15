@@ -38,6 +38,14 @@
         <input type="hidden" name="month" value="{{ selected_month|date:'Y-m' }}">
         <button type="submit" class="primary" id="aiBtn">{{ t.generate_ai }}</button>
     </form>
+    <form method="post" action="{% url 'logistics:generate_operator_report' %}" id="dashAiReportForm">
+        {% csrf_token %}
+        <button type="submit" id="dashAiReportBtn"
+            style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; background: linear-gradient(135deg, rgba(99,102,241,0.9), rgba(34,211,238,0.9)); border: none; color: white; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            {{ t.generate_ai_report }}
+        </button>
+    </form>
     {% if ai_report_time %}
     <span style="font-size: 0.72rem; color: var(--text-secondary);">{{ t.report_generated_at }} {{ ai_report_time }}</span>
     {% endif %}
@@ -262,8 +270,7 @@
         <tbody>
             {% for row in summary_data %}
             <tr>
-                <td style="font-family: var(--font-mono); color: var(--text-muted); font-size: 0.75rem;">{{
-                    forloop.counter }}</td>
+                <td style="font-family: var(--font-mono); color: var(--text-muted); font-size: 0.75rem;">{{ forloop.counter }}</td>
                 <td>
                     <a href="{% url 'logistics:machine_detail' row.machine_id %}?month={{ selected_month|date:'Y-m' }}">
                         {{ row.machine_name }}
