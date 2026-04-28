@@ -1754,7 +1754,7 @@ def daily_machine_summary(request):
     - Distance between machine and visit location.
     """
     import math
-    from .models import CarLogStop, VisitLog, Machine
+    from .models import CarLogStop, VisitLog, Machine, SupervisorDailyReport
 
     def haversine(lat1, lon1, lat2, lon2):
         """Calculate distance in meters between two GPS points."""
@@ -1816,7 +1816,10 @@ def daily_machine_summary(request):
             car_stop_map[stop.machine_id] = []
         car_stop_map[stop.machine_id].append(stop)
 
-    # 5. Build Summary Data
+    # 5. Get Supervisor Reports for the day
+    supervisor_reports = SupervisorDailyReport.objects.filter(date=selected_date).select_related('supervisor').prefetch_related('operator_reviews__operator', 'images')
+
+    # 6. Build Summary Data
     summary_data = []
     total_visited_operator = 0
     total_visited_car = 0
@@ -1908,6 +1911,7 @@ def daily_machine_summary(request):
         'issues_count': issues_count,
         'total_voids_today': total_voids_today,
         'total_transactions_today': total_transactions_today,
+        'supervisor_reports': supervisor_reports,
     }
 
     return render(request, 'logistics/daily_machine_summary.html', context)

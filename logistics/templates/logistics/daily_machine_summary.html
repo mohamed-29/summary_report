@@ -52,6 +52,129 @@
     </div>
 </div>
 
+{% if supervisor_reports %}
+<div class="supervisor-reports-section" style="margin-bottom: 1.5rem; animation: fadeIn 0.3s ease;">
+    <h2 style="font-size: 1.1rem; margin-bottom: 0.75rem; color: var(--text-primary); font-family: var(--font-display);">{{ t.supervisor_reports|default:"Supervisor Daily Reports" }}</h2>
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+        {% for report in supervisor_reports %}
+        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-dim); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem;">
+                        {{ report.supervisor.name|make_list|first }}
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.05rem; color: var(--text-primary); font-weight: 600;">{{ report.supervisor.name }}</h3>
+                        {% if report.location %}
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.1rem; display: flex; align-items: center; gap: 4px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                            <a href="https://www.google.com/maps?q={{ report.location }}" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 1px dashed var(--text-muted);">{{ t.view_location|default:"View Location" }}</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); background: var(--bg-hover); padding: 0.25rem 0.5rem; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    {{ report.created_at|time:"H:i" }}
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                {% if report.general_issues %}
+                <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.85rem; border-radius: var(--radius-sm);">
+                    <strong style="color: var(--danger); font-size: 0.8rem; display: flex; align-items: center; gap: 4px; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        {{ t.general_issues|default:"General Issues" }}
+                    </strong>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">{{ report.general_issues|linebreaksbr }}</div>
+                </div>
+                {% endif %}
+                
+                {% if report.reported_issues %}
+                <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); padding: 0.85rem; border-radius: var(--radius-sm);">
+                    <strong style="color: var(--warning); font-size: 0.8rem; display: flex; align-items: center; gap: 4px; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        {{ t.reported_issues|default:"Reported Issues" }}
+                    </strong>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">{{ report.reported_issues|linebreaksbr }}</div>
+                </div>
+                {% endif %}
+                
+                {% if report.general_comments %}
+                <div style="background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); padding: 0.85rem; border-radius: var(--radius-sm);">
+                    <strong style="color: #60a5fa; font-size: 0.8rem; display: flex; align-items: center; gap: 4px; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        {{ t.general_comments|default:"General Comments" }}
+                    </strong>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">{{ report.general_comments|linebreaksbr }}</div>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if report.operator_reviews.all %}
+            <div style="margin-top: 1.25rem; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden;">
+                <div style="background: var(--bg-hover); padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <h4 style="font-size: 0.85rem; margin: 0; color: var(--text-secondary); font-weight: 600;">{{ t.operator_reviews|default:"Operator Reviews" }}</h4>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                        <thead>
+                            <tr style="background: var(--bg-card); border-bottom: 1px solid var(--border);">
+                                <th style="padding: 0.6rem 0.75rem; font-weight: 600; color: var(--text-secondary);">{{ t.operator|default:"Operator" }}</th>
+                                <th style="padding: 0.6rem 0.75rem; font-weight: 600; color: var(--text-secondary);">{{ t.attended|default:"Attended" }}</th>
+                                <th style="padding: 0.6rem 0.75rem; font-weight: 600; color: var(--text-secondary);">{{ t.location|default:"Location" }}</th>
+                                <th style="padding: 0.6rem 0.75rem; font-weight: 600; color: var(--text-secondary);">{{ t.rating|default:"Rating" }}</th>
+                                <th style="padding: 0.6rem 0.75rem; font-weight: 600; color: var(--text-secondary);">{{ t.comments|default:"Comments" }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for review in report.operator_reviews.all %}
+                            <tr style="border-bottom: 1px solid var(--border-light); background: {% cycle 'transparent' 'rgba(255,255,255,0.02)' %};">
+                                <td style="padding: 0.6rem 0.75rem; font-weight: 500; color: var(--text-primary);">{{ review.operator.name }}</td>
+                                <td style="padding: 0.6rem 0.75rem;">
+                                    {% if review.attended %}
+                                    <span class="badge badge-success" style="font-size: 0.65rem; padding: 2px 6px;">{{ t.yes|default:"Yes" }}</span>
+                                    {% else %}
+                                    <span class="badge badge-danger" style="font-size: 0.65rem; padding: 2px 6px;">{{ t.no|default:"No" }}</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 0.6rem 0.75rem; color: var(--text-secondary);">{{ review.location|default:"-" }}</td>
+                                <td style="padding: 0.6rem 0.75rem;">
+                                    <span style="font-weight: 600; padding: 2px 6px; border-radius: 4px; background: {% if review.rating >= 8 %}rgba(16, 185, 129, 0.1){% elif review.rating >= 5 %}rgba(245, 158, 11, 0.1){% else %}rgba(239, 68, 68, 0.1){% endif %}; color: {% if review.rating >= 8 %}var(--success){% elif review.rating >= 5 %}var(--warning){% else %}var(--danger){% endif %};">
+                                        {{ review.rating }}/10
+                                    </span>
+                                </td>
+                                <td style="padding: 0.6rem 0.75rem; color: var(--text-secondary);">{{ review.comments|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if report.images.all %}
+            <div style="margin-top: 1.25rem;">
+                <h4 style="font-size: 0.85rem; margin: 0 0 0.5rem 0; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    {{ t.photos|default:"Photos" }}
+                </h4>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    {% for img in report.images.all %}
+                    <a href="{{ img.image.url }}" target="_blank" style="display: block; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        <img src="{{ img.image.url }}" alt="{{ img.caption|default:'Report Image' }}" style="height: 60px; width: 60px; object-fit: cover; display: block;">
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <!-- Search & Filter Bar -->
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
     <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
